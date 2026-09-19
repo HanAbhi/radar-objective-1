@@ -1,3 +1,4 @@
+
 # Radar Signal Processing – Objective I
 
 A Python-based radar simulation project exploring range-Doppler processing, clutter, noise, and target detection.
@@ -42,26 +43,45 @@ The received signal is processed using range and Doppler FFTs to generate a rang
 
 ## Getting Started
 
-### 1. Clone the repository
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/YOUR-USERNAME/radar-objective-1.git
 cd radar-objective-1
+```
 
-2. Create a virtual environment
+Replace `YOUR-USERNAME` with your GitHub username.
+
+### 2. Create a Virtual Environment
+
+```bash
 python -m venv .venv
+```
 
-Activate it on Windows:
+### 3. Activate the Virtual Environment
+
+**Windows (PowerShell):**
+
+```powershell
 .\.venv\Scripts\Activate.ps1
+```
 
-3. Install dependencies
+### 4. Install Dependencies
+
+```bash
 python -m pip install -r requirements.txt
+```
 
-4. Run the simulation
+### 5. Run the Simulation
+
+```bash
 python radar_model.py
+```
 
-Outputs
-The simulation generates an outputs/ folder containing:
+## Outputs
+
+The simulation generates an `outputs/` folder containing:
+
 - Range-Doppler map
 - Fixed-threshold detection plot
 - CA-CFAR detection plot
@@ -69,24 +89,17 @@ The simulation generates an outputs/ folder containing:
 - Packed hexadecimal I/Q data
 - Reference range-Doppler results
 - Detection results in CSV format
-Current Status
+
+## Current Status
+
 Objective I includes synthetic radar signal generation, range-Doppler processing, visualization, and reference data export.
+
 Target detection is currently under investigation. The expected target is not yet detected at its exact range-Doppler coordinate.
-Future Work
+
+## Future Work
+
 - Debug and validate target detection
 - Evaluate performance under different noise and clutter conditions
 - Study probability of detection and false alarm rate
 - Prepare reference data for FPGA implementation
 - Compare software and FPGA results
-
-
-
-4. Replace `YOUR-USERNAME` with your GitHub username.
-5. Press `Ctrl + S`.
-
-**Then push it to GitHub:**
-
-```powershell
-git add README.md
-git commit -m "Add project README"
-git push
