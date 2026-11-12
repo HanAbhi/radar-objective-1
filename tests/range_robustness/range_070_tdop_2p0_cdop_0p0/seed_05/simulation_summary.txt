@@ -1,0 +1,11 @@
+RADAR SIMULATION SUMMARY
+Frame: 32 chirps x 512 samples = 16384 complex samples
+Target: range bin 70, signed Doppler bin 2.0, shifted index 18
+Clutter: range bin 72, signed Doppler bin 0.0, shifted coord 16.00
+Global detector: target=True, cells above threshold=337
+CFAR detector: target=True, cells above threshold=346
+Target power: 13319.445661
+Global threshold: 115.263250
+CFAR threshold at target: 187.800045
+FPGA input: 12-bit signed I/Q, 16384 lines, scaling factor=2103.875908
+All files saved in: C:\Users\asus\Downloads\radar_objective_1\radar_objective_1\outputs_512x32_range_robustness\range_070_tdop_2p0_cdop_0p0\seed_05

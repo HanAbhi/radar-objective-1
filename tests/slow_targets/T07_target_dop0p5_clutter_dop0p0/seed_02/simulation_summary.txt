@@ -1,0 +1,12 @@
+RADAR SIMULATION SUMMARY
+Experiment: T07_VerySlow_0p5 | seed=2
+Frame: 32 chirps x 512 samples = 16384 complex samples
+Target: range bin 70, signed Doppler bin 0.5, shifted coord 16.50 (eval bin 17)
+Clutter: range bin 72, signed Doppler bin 0.0, shifted coord 16.00
+Global detector: target=True, cells above threshold=272
+CFAR detector: target=False, cells above threshold=339
+Target power (bin 17): 10144.227206
+Global threshold: 117.477915
+CFAR threshold at target (bin 17): 293890.395818
+FPGA input: 12-bit signed I/Q, 16384 lines, scaling factor=2047.182842
+All files saved in: C:\Users\asus\Downloads\radar_objective_1\radar_objective_1\outputs_512x32_slow_targets\T07_target_dop0p5_clutter_dop0p0\seed_02

@@ -1,3 +1,7 @@
 .venv/
 __pycache__/
 *.pyc
+outputs/
+src/outputs/
+*_tmp.html
+_chrome_tmp/
