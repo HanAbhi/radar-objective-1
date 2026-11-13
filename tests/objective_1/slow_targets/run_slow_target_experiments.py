@@ -302,7 +302,7 @@ def run_single_simulation(
 
 def main() -> None:
     base = Path(__file__).resolve().parent
-    out_root = base / "outputs_512x32_slow_targets"
+    out_root = base
     out_root.mkdir(parents=True, exist_ok=True)
 
     configs = [

@@ -9,8 +9,16 @@ import numpy as np
 from pathlib import Path
 
 
-BASE = Path(__file__).resolve().parent.parent
-OUT_DIR = BASE / "analysis" / "clutter_investigation"
+def find_repo_root() -> Path:
+    p = Path(__file__).resolve()
+    while p != p.parent:
+        if (p / "src" / "radar_model.py").exists():
+            return p
+        p = p.parent
+    return Path(".").resolve()
+
+BASE = find_repo_root()
+OUT_DIR = BASE / "analysis" / "objective_1" / "clutter_investigation"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 CLUTTER_RANGE = 72
@@ -35,7 +43,7 @@ def collect_all_runs() -> list[tuple[str, str, Path, dict]]:
     runs = []
 
     # 1. Step 7 multi-seed (40 runs)
-    s7_dir = BASE / "tests" / "step7_multiseed"
+    s7_dir = BASE / "tests" / "objective_1" / "step7_multiseed"
     for cfg, tamp, cdop in [
         ("groupA_moderate_dop0p0", 0.10, 0.0),
         ("groupA_moderate_dop0p3", 0.10, 0.3),
@@ -51,7 +59,7 @@ def collect_all_runs() -> list[tuple[str, str, Path, dict]]:
             ))
 
     # 2. Step 7 noise-only (10 runs)
-    n_dir = BASE / "tests" / "noise_only"
+    n_dir = BASE / "tests" / "objective_1" / "noise_only"
     for seed in range(1, 11):
         runs.append((
             "step7_noise_only",
@@ -61,7 +69,7 @@ def collect_all_runs() -> list[tuple[str, str, Path, dict]]:
         ))
 
     # 3. T06 / T07 slow targets (40 runs)
-    slow_dir = BASE / "tests" / "slow_targets"
+    slow_dir = BASE / "tests" / "objective_1" / "slow_targets"
     for cfg, tdop, eval_d, cdop in [
         ("T06_target_dop1p0_clutter_dop0p0", 1.0, 17, 0.0),
         ("T06_target_dop1p0_clutter_dop0p3", 1.0, 17, 0.3),
@@ -77,7 +85,7 @@ def collect_all_runs() -> list[tuple[str, str, Path, dict]]:
             ))
 
     # 4. Range robustness (120 runs)
-    rr_dir = BASE / "tests" / "range_robustness"
+    rr_dir = BASE / "tests" / "objective_1" / "range_robustness"
     for r_bin in [40, 70, 120, 200, 300, 450]:
         for tdop, eval_d in [(1.0, 17), (2.0, 18)]:
             for cdop in [0.0, 0.3]:

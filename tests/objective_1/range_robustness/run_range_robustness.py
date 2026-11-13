@@ -310,7 +310,7 @@ def run_single_task(args: tuple) -> dict:
 
 def main() -> None:
     base = Path(__file__).resolve().parent
-    out_root = base / "outputs_512x32_range_robustness"
+    out_root = base
     out_root.mkdir(parents=True, exist_ok=True)
 
     tasks = []

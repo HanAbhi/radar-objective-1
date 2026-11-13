@@ -10,33 +10,75 @@ A high-fidelity Python baseband radar signal processing reference model and 217-
 
 ## Repository Directory Structure
 
+The repository is organised into a modular research and engineering layout separating the frozen Objective I baseline, documentation, analysis scripts, configurations, and future Objective II hardware/RTL scaffolds:
+
 ```
 radar-objective-1/
-├── src/
-│   └── radar_model.py                      # Frozen baseband radar simulation reference model
-├── tests/
-│   ├── T01-T05/                            # Initial benchmark diagnostics (5 runs, seed 42)
-│   ├── C01-C02/                            # Stationary vs near-zero-Doppler clutter (2 runs, seed 42)
-│   ├── step7_multiseed/                    # Combined target+clutter+noise validation (40 runs, seeds 1-10)
-│   ├── noise_only/                         # Pure AWGN calibration baseline (10 runs, seeds 1-10)
-│   ├── slow_targets/                       # Slow-target sweeps T06/T07 (40 runs) & experiment runner
-│   │   └── run_slow_target_experiments.py
-│   └── range_robustness/                   # Range sweep across 6 bins (120 runs) & experiment runner
-│       └── run_range_robustness.py
-├── analysis/
-│   ├── audit_step7.py                      # Full statistical audit script for 50 Step 7 runs
-│   ├── analyze_clutter_proximity.py        # 210-run clutter proximity failure analysis
-│   └── clutter_investigation/              # Diagnostic range profiles, TCR curves & CSV datasets
-├── objective_1_final_documentation/
-│   ├── objective_1_final_report.pdf        # Comprehensive 16-page academic report with 9 figures
-│   ├── objective_1_one_page_summary.pdf    # 1-page executive summary & consolidated metric table
-│   ├── objective_2_unresolved_limitations.pdf # 1-page prioritized technical limitation handoff
-│   ├── objective_1_final_audit.pdf         # 9-page formal 10-item audit & verification certificate
-│   ├── figures/                            # High-resolution publication plots (9 figures)
-│   └── render_pdfs.py                      # Automated HTML-to-PDF rendering pipeline
+├── README.md                               # Project documentation & reference index
 ├── requirements.txt                        # Python dependencies
-├── README.md                               # Project documentation
-└── .gitignore                              # Git exclusion rules
+├── .gitignore                              # Git exclusion rules
+├── path_mapping.json                       # Comprehensive migration map (old paths -> new paths)
+│
+├── docs/
+│   ├── objective_1/                        # Objective I reports & verification documents
+│   │   ├── final_report.pdf                # Comprehensive academic report with 9 figures
+│   │   ├── one_page_summary.pdf            # 1-page executive summary & consolidated metric table
+│   │   ├── final_audit.pdf                 # Formal 10-item audit & verification certificate
+│   │   ├── render_pdfs.py                  # HTML/Chrome headless PDF generation pipeline
+│   │   └── figures/                        # High-resolution publication plots (9 figures)
+│   ├── objective_2/
+│   │   └── limitations_handoff.pdf         # 1-page prioritized technical limitation handoff
+│   └── architecture/                       # System block diagrams & specification sheets
+│
+├── src/
+│   ├── radar_model.py                      # Frozen baseband radar simulation reference model
+│   ├── signal_generation/                  # Modular synthetic chirp & target generators
+│   ├── detection/                          # CFAR & adaptive detection modules
+│   └── utils/                              # Mathematical helpers & DSP utilities
+│
+├── tests/
+│   ├── objective_1/                        # 217-run validated experimental suites
+│   │   ├── T01_T05/                        # Benchmark diagnostics (5 runs, seed 42)
+│   │   ├── C01_C02/                        # Stationary vs near-zero clutter (2 runs, seed 42)
+│   │   ├── step7_multiseed/                # Target+clutter+noise validation (40 runs, seeds 1-10)
+│   │   ├── noise_only/                     # Pure AWGN calibration baseline (10 runs, seeds 1-10)
+│   │   ├── slow_targets/                   # Slow-target sweeps T06/T07 (40 runs) & runner
+│   │   └── range_robustness/               # Range sweeps across 6 bins (120 runs) & runner
+│   ├── extended_validation/                # Extended research & edge-case testbenches
+│   │   ├── clutter_proximity_sweep/
+│   │   ├── cfar_calibration/
+│   │   ├── adc_fixed_gain/
+│   │   ├── boundary_tests/
+│   │   ├── fractional_bin_tests/
+│   │   ├── multi_target_tests/
+│   │   └── detector_comparison/
+│   └── unit/                               # Fast unit tests for DSP blocks
+│
+├── analysis/
+│   ├── objective_1/                        # Objective I analysis scripts & artifacts
+│   │   ├── audit_step7.py                  # Full statistical audit script for 50 Step 7 runs
+│   │   ├── analyze_clutter_proximity.py    # 210-run clutter proximity failure analysis
+│   │   └── clutter_investigation/          # Diagnostic range profiles, TCR curves & CSVs
+│   ├── extended_validation/                # Extended study analyses
+│   └── scripts/                            # Standalone audit & verification runners
+│       ├── audit_step7.py
+│       └── analyze_clutter_proximity.py
+│
+├── hardware/
+│   └── objective_2/                        # Objective II FPGA/ASIC hardware transition
+│       ├── rtl/                            # Verilog/SystemVerilog RTL implementations
+│       ├── testbench/                      # UVM / Cocotb simulation testbenches
+│       ├── reference/                      # Bit-accurate C/Python hardware models
+│       ├── test_vectors/                   # Golden I/Q test vectors & outputs
+│       └── documentation/                  # Register maps & interface timing specs
+│
+├── configs/
+│   ├── objective_1/                        # Objective I YAML/JSON parameter configs
+│   └── extended_validation/                # Extended study parameter profiles
+│
+└── outputs/                                # Scratch directory for active run outputs
+    ├── .gitkeep
+    └── README.md
 ```
 
 ---
@@ -72,15 +114,15 @@ Because NumPy's `np.fft.fft` uses unnormalized discrete Fourier transform sums, 
 
 Across Objective I, a total of **217 simulation runs** were executed and audited (7 deterministic benchmark runs + 210 multi-seed sweep runs). Every single run generated an exact 16,384-line 12-bit signed I/Q file and comprehensive CSV metadata:
 
-| Test Suite | Runs | Parameters Tested | Key Findings |
-|---|:---:|---|---|
-| **T01–T05 Diagnostics** | 5 | Isolated target, clutter, and noise baselines (seed 42) | Confirmed linearity, 2D Hann gains, and identified zero-noise median collapse under $A_n = 0$. |
-| **C01–C02 Clutter Tests** | 2 | Stationary ($d_c = 0.0$) vs. near-zero-Doppler ($d_c = 0.3$) clutter | Fractional clutter shifts off-grid, boosting Doppler $+2$ leakage by **75.4×** ($759 \to 57{,}825$). |
-| **Step 7 Target-Present** | 40 | Moderate ($0.10$) & weak ($0.03$) targets at $R_t=70, d_t=+2.0$, seeds 1–10 | Weak targets suffer a **16.4 dB CFAR margin collapse** under $d_c = 0.3$ ($+17.46 \to +1.04\,\mathrm{dB}$, min $+0.76\,\mathrm{dB}$). |
-| **Step 7 Noise-Only** | 10 | Pure circular complex AWGN ($\sigma_n = 0.08$, seeds 1–10) | Global $P_{fa} = 1.589\% \pm 0.162\%$ (theory $1.563\%$). CFAR $P_{fa} = 1.923\% \pm 0.136\%$ ($N_{\text{eff}} \approx 4.714$ predicts $2.09\%$). |
-| **Slow Targets T06–T07** | 40 | Weak targets at $d_t = +1.0$ (T06) and $d_t = +0.5$ (T07) at $R_t=70$ | Exact CA-CFAR $P_d = \mathbf{0.00}$ (margins $-13.20$ to $-17.26\,\mathrm{dB}$) due to stationary clutter Hann mainlobe overlap. |
-| **Target Range Robustness** | 120 | 6 ranges $\{40, 70, 120, 200, 300, 450\}$, 2 target Dop, 2 clutter Dop, 5 seeds | **Observed 5/5 detection** across all 100 clutter-free runs ($R \neq 70$, margins $+17.3$ to $+20.0\,\mathrm{dB}$). Failures strictly isolated to $R_t = 70$. |
-| **Clutter Proximity Analysis** | — | High-resolution sweep across bins $64–80$ ($210$-run synthesis) | Pinpointed a **15-bin clutter-degraded masking region** for weak targets ($|r - 72| \le 7$, $r \in [65, 79]$); full recovery requires $|r - 72| \ge 8$. |
+| Test Suite | Location | Runs | Parameters Tested | Key Findings |
+|---|---|:---:|---|---|
+| **T01–T05 Diagnostics** | `tests/objective_1/T01_T05/` | 5 | Isolated target, clutter, and noise baselines (seed 42) | Confirmed linearity, 2D Hann gains, and identified zero-noise median collapse under $A_n = 0$. |
+| **C01–C02 Clutter Tests** | `tests/objective_1/C01_C02/` | 2 | Stationary ($d_c = 0.0$) vs. near-zero-Doppler ($d_c = 0.3$) clutter | Fractional clutter shifts off-grid, boosting Doppler $+2$ leakage by **75.4×** ($759 \to 57{,}825$). |
+| **Step 7 Target-Present** | `tests/objective_1/step7_multiseed/` | 40 | Moderate ($0.10$) & weak ($0.03$) targets at $R_t=70, d_t=+2.0$, seeds 1–10 | Weak targets suffer a **16.4 dB CFAR margin collapse** under $d_c = 0.3$ ($+17.46 \to +1.04\,\mathrm{dB}$, min $+0.76\,\mathrm{dB}$). |
+| **Step 7 Noise-Only** | `tests/objective_1/noise_only/` | 10 | Pure circular complex AWGN ($\sigma_n = 0.08$, seeds 1–10) | Global $P_{fa} = 1.589\% \pm 0.162\%$ (theory $1.563\%$). CFAR $P_{fa} = 1.923\% \pm 0.136\%$ ($N_{\text{eff}} \approx 4.714$ predicts $2.09\%$). |
+| **Slow Targets T06–T07** | `tests/objective_1/slow_targets/` | 40 | Weak targets at $d_t = +1.0$ (T06) and $d_t = +0.5$ (T07) at $R_t=70$ | Exact CA-CFAR $P_d = \mathbf{0.00}$ (margins $-13.20$ to $-17.26\,\mathrm{dB}$) due to stationary clutter Hann mainlobe overlap. |
+| **Target Range Robustness** | `tests/objective_1/range_robustness/` | 120 | 6 ranges $\{40, 70, 120, 200, 300, 450\}$, 2 target Dop, 2 clutter Dop, 5 seeds | **Observed 5/5 detection** across all 100 clutter-free runs ($R \neq 70$, margins $+17.3$ to $+20.0\,\mathrm{dB}$). Failures strictly isolated to $R_t = 70$. |
+| **Clutter Proximity Analysis** | `analysis/objective_1/clutter_investigation/` | — | High-resolution sweep across bins $64–80$ ($210$-run synthesis) | Pinpointed a **15-bin clutter-degraded masking region** for weak targets ($|r - 72| \le 7$, $r \in [65, 79]$); full recovery requires $|r - 72| \ge 8$. |
 
 ---
 
@@ -100,7 +142,7 @@ Across Objective I, a total of **217 simulation runs** were executed and audited
 ### 1. Environment Setup
 
 ```bash
-# Clone the repository
+# Clone repository
 git clone git@github.com:HanAbhi/radar-objective-1.git
 cd radar-objective-1
 
@@ -124,34 +166,34 @@ python src/radar_model.py
 
 ```bash
 # Run slow-target validation (T06 & T07, 40 runs)
-python tests/slow_targets/run_slow_target_experiments.py
+python tests/objective_1/slow_targets/run_slow_target_experiments.py
 
 # Run target range robustness sweeps (120 runs)
-python tests/range_robustness/run_range_robustness.py
+python tests/objective_1/range_robustness/run_range_robustness.py
 ```
 
 ### 4. Running Verification & Audits
 
 ```bash
 # Run statistical audit of Step 7 (50 runs)
-python analysis/audit_step7.py
+python analysis/scripts/audit_step7.py
 
 # Run clutter proximity failure investigation (210 runs)
-python analysis/analyze_clutter_proximity.py
+python analysis/scripts/analyze_clutter_proximity.py
 
 # Re-render all publication PDFs
-python objective_1_final_documentation/render_pdfs.py
+python docs/objective_1/render_pdfs.py
 ```
 
 ---
 
 ## Academic Documentation & Reports
 
-All formal documentation, executive summaries, and audit reports are available in [`objective_1_final_documentation/`](objective_1_final_documentation/):
-- **Final Validation Report:** [`objective_1_final_report.pdf`](objective_1_final_documentation/objective_1_final_report.pdf)
-- **One-Page Executive Summary:** [`objective_1_one_page_summary.pdf`](objective_1_final_documentation/objective_1_one_page_summary.pdf)
-- **Objective II Limitations Handoff:** [`objective_2_unresolved_limitations.pdf`](objective_1_final_documentation/objective_2_unresolved_limitations.pdf)
-- **Comprehensive Audit Report:** [`objective_1_final_audit.pdf`](objective_1_final_documentation/objective_1_final_audit.pdf)
+All formal documentation, executive summaries, and audit reports are available under [`docs/`](docs/):
+- **Final Validation Report:** [`docs/objective_1/final_report.pdf`](docs/objective_1/final_report.pdf)
+- **One-Page Executive Summary:** [`docs/objective_1/one_page_summary.pdf`](docs/objective_1/one_page_summary.pdf)
+- **Comprehensive Audit Report:** [`docs/objective_1/final_audit.pdf`](docs/objective_1/final_audit.pdf)
+- **Objective II Limitations Handoff:** [`docs/objective_2/limitations_handoff.pdf`](docs/objective_2/limitations_handoff.pdf)
 
 ---
 

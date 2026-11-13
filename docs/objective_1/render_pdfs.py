@@ -560,13 +560,15 @@ p.footnote {{
 </html>"""
 
 
-def render_pair(md_name: str, pdf_name: str, title: str, one_page: bool = False) -> None:
-    md_path = DOC_DIR / md_name
-    html_path = DOC_DIR / (md_path.stem + "_tmp.html")
-    pdf_path = DOC_DIR / pdf_name
-    profile_dir = DOC_DIR / "_chrome_tmp"
+def render_pair(md_name: str, pdf_name: str, title: str, one_page: bool = False, base_dir: Path = None) -> None:
+    if base_dir is None:
+        base_dir = DOC_DIR
+    md_path = base_dir / md_name
+    html_path = base_dir / (md_path.stem + "_tmp.html")
+    pdf_path = base_dir / pdf_name
+    profile_dir = base_dir / "_chrome_tmp"
 
-    html_text = md_to_html_doc(md_path.read_text(encoding="utf-8"), DOC_DIR, title, one_page=one_page)
+    html_text = md_to_html_doc(md_path.read_text(encoding="utf-8"), base_dir, title, one_page=one_page)
     html_path.write_text(html_text, encoding="utf-8")
 
     cmd = [
@@ -584,10 +586,12 @@ def render_pair(md_name: str, pdf_name: str, title: str, one_page: bool = False)
     print(f"Generated: {pdf_path} ({pdf_path.stat().st_size:,} bytes)")
 
 
-def prep_html(md_name: str, title: str, one_page: bool = False) -> Path:
-    md_path = DOC_DIR / md_name
-    html_path = DOC_DIR / (md_path.stem + "_tmp.html")
-    html_text = md_to_html_doc(md_path.read_text(encoding="utf-8"), DOC_DIR, title, one_page=one_page)
+def prep_html(md_name: str, title: str, one_page: bool = False, base_dir: Path = None) -> Path:
+    if base_dir is None:
+        base_dir = DOC_DIR
+    md_path = base_dir / md_name
+    html_path = base_dir / (md_path.stem + "_tmp.html")
+    html_text = md_to_html_doc(md_path.read_text(encoding="utf-8"), base_dir, title, one_page=one_page)
     html_path.write_text(html_text, encoding="utf-8")
     print(f"Prepared: {html_path.name}")
     return html_path
@@ -595,17 +599,21 @@ def prep_html(md_name: str, title: str, one_page: bool = False) -> Path:
 
 if __name__ == "__main__":
     import sys
+    doc_dir_obj2 = DOC_DIR.parent / "objective_2"
     if "--prep" in sys.argv:
-        prep_html("objective_1_final_report.md", "Objective I Final Validation Report", one_page=False)
-        prep_html("objective_1_one_page_summary.md", "Objective I One-Page Executive Summary", one_page=True)
-        prep_html("objective_2_unresolved_limitations.md", "Objective II Technical Limitations Handoff", one_page=True)
+        prep_html("final_report.md", "Objective I Final Validation Report", one_page=False)
+        prep_html("one_page_summary.md", "Objective I One-Page Executive Summary", one_page=True)
+        prep_html("limitations_handoff.md", "Objective II Technical Limitations Handoff", one_page=True, base_dir=doc_dir_obj2)
     elif "--cleanup" in sys.argv:
         for p in DOC_DIR.glob("*_tmp.html"):
             p.unlink(missing_ok=True)
+        for p in doc_dir_obj2.glob("*_tmp.html"):
+            p.unlink(missing_ok=True)
         shutil.rmtree(DOC_DIR / "_chrome_tmp", ignore_errors=True)
+        shutil.rmtree(doc_dir_obj2 / "_chrome_tmp", ignore_errors=True)
         print("Cleaned temporary HTML and Chrome profile files.")
     else:
-        render_pair("objective_1_final_report.md", "objective_1_final_report.pdf", "Objective I Final Validation Report", one_page=False)
-        render_pair("objective_1_one_page_summary.md", "objective_1_one_page_summary.pdf", "Objective I One-Page Executive Summary", one_page=True)
-        render_pair("objective_2_unresolved_limitations.md", "objective_2_unresolved_limitations.pdf", "Objective II Technical Limitations Handoff", one_page=True)
-        render_pair("objective_1_final_audit.md", "objective_1_final_audit.pdf", "Objective I Comprehensive Audit Report", one_page=False)
+        render_pair("final_report.md", "final_report.pdf", "Objective I Final Validation Report", one_page=False)
+        render_pair("one_page_summary.md", "one_page_summary.pdf", "Objective I One-Page Executive Summary", one_page=True)
+        render_pair("final_audit.md", "final_audit.pdf", "Objective I Comprehensive Audit Report", one_page=False)
+        render_pair("limitations_handoff.md", "limitations_handoff.pdf", "Objective II Technical Limitations Handoff", one_page=True, base_dir=doc_dir_obj2)

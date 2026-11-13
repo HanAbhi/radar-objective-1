@@ -2,9 +2,17 @@ import csv
 import numpy as np
 from pathlib import Path
 
-base = Path(__file__).resolve().parent.parent
-step7_multi = base / "tests" / "step7_multiseed"
-step7_noise = base / "tests" / "noise_only"
+def find_repo_root() -> Path:
+    p = Path(__file__).resolve()
+    while p != p.parent:
+        if (p / "src" / "radar_model.py").exists():
+            return p
+        p = p.parent
+    return Path(".").resolve()
+
+base = find_repo_root()
+step7_multi = base / "tests" / "objective_1" / "step7_multiseed"
+step7_noise = base / "tests" / "objective_1" / "noise_only"
 
 configs = [
     ("Group_A_Moderate", 0.10, 0.0, step7_multi / "groupA_moderate_dop0p0"),
