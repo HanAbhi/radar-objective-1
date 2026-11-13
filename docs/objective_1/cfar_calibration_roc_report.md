@@ -86,19 +86,25 @@ flowchart LR
 
 The table below summarizes the false-alarm probability $P_{fa}$ across the full $\alpha$ sweep, comparing the calibration dataset against the independent validation dataset:
 
-| $\alpha$ Multiplier | Calibration $P_{fa}$ ($95\%\text{ CI}$) | Validation $P_{fa}$ ($95\%\text{ CI}$) | Hann Theory ($N_{\text{eff}}=4.714$) | Uncorrelated Theory ($N=8$) | Relative Val vs Cal Diff | Designation |
-|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| `5.5000` | $2.414\% \; [2.390 .. 2.437]$ | $2.413\% \; [2.396 .. 2.430]$ | $2.612\%$ | $1.521\%$ | $-0.04\%$ | — |
-| `6.0000` | $1.900\% \; [1.879 .. 1.922]$ | $1.896\% \; [1.881 .. 1.911]$ | $2.085\%$ | $1.137\%$ | $-0.21\%$ | **Frozen Baseline** |
-| `6.5000` | $1.505\% \; [1.487 .. 1.524]$ | $1.504\% \; [1.491 .. 1.518]$ | $1.682\%$ | $0.859\%$ | $-0.07\%$ | — |
-| `7.0000` | $1.205\% \; [1.188 .. 1.222]$ | $1.202\% \; [1.190 .. 1.214]$ | $1.369\%$ | $0.655\%$ | $-0.25\%$ | — |
-| `7.4249` | **$1.000\% \; [0.985 .. 1.016]$** | **$1.000\% \; [0.989 .. 1.011]$** | $1.158\%$ | $0.524\%$ | **$+0.00\%$** | **Calibrated $1.0\%$ Mode** |
-| `7.5000` | $0.967\% \; [0.952 .. 0.982]$ | $0.970\% \; [0.959 .. 0.981]$ | $1.124\%$ | $0.504\%$ | $+0.31\%$ | — |
-| `8.0000` | $0.787\% \; [0.773 .. 0.800]$ | $0.790\% \; [0.781 .. 0.800]$ | $0.931\%$ | $0.391\%$ | $+0.38\%$ | — |
-| `8.5000` | $0.645\% \; [0.633 .. 0.658]$ | $0.649\% \; [0.640 .. 0.658]$ | $0.776\%$ | $0.305\%$ | $+0.62\%$ | — |
+| $\alpha$ Multiplier | Calibration $P_{fa}$ (Cluster CI) | Validation $P_{fa}$ (Cluster CI) | Validation $P_{fa}$ (Naive Wilson) | Hann Theory ($N_{\text{eff}}=4.714$) | Uncorr Theory ($N=8$) | Relative Val vs Cal | Designation |
+|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| `5.5000` | $2.414\% \; [2.383 .. 2.444]$ | $2.413\% \; [2.390 .. 2.436]$ | $2.413\% \; [2.396 .. 2.430]$ | $2.612\%$ | $1.521\%$ | $-0.04\%$ | — |
+| `6.0000` | $1.900\% \; [1.873 .. 1.927]$ | $1.896\% \; [1.875 .. 1.917]$ | $1.896\% \; [1.881 .. 1.911]$ | $2.085\%$ | $1.137\%$ | $-0.21\%$ | **Frozen Baseline** |
+| `6.5000` | $1.505\% \; [1.480 .. 1.530]$ | $1.504\% \; [1.485 .. 1.524]$ | $1.504\% \; [1.491 .. 1.518]$ | $1.682\%$ | $0.859\%$ | $-0.07\%$ | — |
+| `7.0000` | $1.205\% \; [1.182 .. 1.228]$ | $1.202\% \; [1.184 .. 1.220]$ | $1.202\% \; [1.190 .. 1.214]$ | $1.369\%$ | $0.655\%$ | $-0.25\%$ | — |
+| `7.4249` | **$1.000\% \; [0.980 .. 1.020]$** | **$1.000\% \; [0.984 .. 1.016]$** | **$1.000\% \; [0.989 .. 1.011]$** | $1.158\%$ | $0.524\%$ | **$+0.00\%$** | **Calibrated $1.0\%$ Mode** |
+| `7.5000` | $0.967\% \; [0.947 .. 0.987]$ | $0.970\% \; [0.954 .. 0.986]$ | $0.970\% \; [0.959 .. 0.981]$ | $1.124\%$ | $0.504\%$ | $+0.31\%$ | — |
+| `8.0000` | $0.787\% \; [0.769 .. 0.804]$ | $0.790\% \; [0.776 .. 0.804]$ | $0.790\% \; [0.781 .. 0.800]$ | $0.931\%$ | $0.391\%$ | $+0.38\%$ | — |
+| `8.5000` | $0.645\% \; [0.629 .. 0.661]$ | $0.649\% \; [0.636 .. 0.662]$ | $0.649\% \; [0.640 .. 0.658]$ | $0.776\%$ | $0.305\%$ | $+0.62\%$ | — |
 
-### Key Statistical Insights:
-1. **Zero Overfitting:** The calibrated multiplier $\alpha = 7.4249$ derived on the 100 calibration frames yielded **precisely $1.000\%$ false alarms** on the 200 independent validation frames, within a tight $95\%$ confidence interval of $[0.989\% .. 1.011\%]$.
+### Statistical Methodology & Confidence Interval Assumptions:
+1. **Cluster-Robust Frame-Level Inference:**  
+   Because the $16,000$ CUT cells within a single CPI frame are spatially correlated via the fast-time Hann window ($\rho_1 \approx 0.667$) and overlapping reference windows, treating all $3,200,000$ cells as independent Bernoulli trials artificially deflates the estimated standard error. Instead, the true independent sampling unit is the **complete CPI frame** ($N = 200$ independent pseudo-random seeds).  
+   For each frame $i$, the empirical false-alarm proportion $p_i = k_i / 16{,}000$ is computed. The reported Cluster CI uses the sample standard deviation $s$ across frames to compute the standard error $\mathrm{SEM} = s / \sqrt{N}$ and applies Student's $t$-distribution with $\nu = N - 1$ degrees of freedom ($\nu = 199$ for validation, $\nu = 99$ for calibration). At $\alpha = 7.4249$, $\mathrm{SEM} = 0.0081\%$, producing a robust $95\%$ confidence interval of $[0.984\%, 1.016\%]$.
+2. **Naive Binomial Wilson Score Comparison:**  
+   The naive Wilson interval assumes zero correlation among all $3.2 \times 10^6$ cell decisions ($[0.989\%, 1.011\%]$). While mathematically precise under pure independence, it underestimates the true sampling uncertainty by $\approx 1.45\times$ due to Hann window spatial dependence.
+3. **Zero Overfitting:**  
+   The calibrated multiplier $\alpha = 7.4249$ derived on the 100 calibration frames yielded **precisely $1.000\%$ false alarms** on the 200 independent validation frames, within both the cluster-robust and naive confidence intervals.
 2. **Predictive Accuracy:** The effective-cells model $N_{\text{eff}} \approx 4.714$ matches empirical data within $0.15\%$ across all $\alpha$, confirming that window-induced spatial correlation is the true physical driver of the baseline divergence.
 
 ![CFAR Calibration Pfa vs Alpha](../../tests/extended_validation/cfar_calibration/cfar_calibration_pfa_vs_alpha.png)

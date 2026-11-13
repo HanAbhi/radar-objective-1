@@ -7,7 +7,7 @@
 [![Status: Objective I Frozen](https://img.shields.io/badge/Objective%20I-Validated%20%26%20Frozen-success.svg)](docs/objective_1/final_audit.pdf)
 [![Status: Objective II Planned](https://img.shields.io/badge/Objective%20II-RTL%20Architecture%20Planned-blue.svg)](docs/objective_2/limitations_handoff.pdf)
 
-An academic research and engineering portfolio repository presenting the mathematical modeling, algorithmic simulation, statistical validation, and fixed-point hardware analysis of a coherent pulse-Doppler radar receiver designed for weak and slow-moving target detection in severe clutter environments.
+An academic research and engineering portfolio repository presenting the mathematical modeling, algorithmic simulation, statistical validation, and fixed-gain ADC quantization analysis of a coherent pulse-Doppler radar receiver designed for weak and slow-moving target detection in severe clutter environments, with a planned roadmap for fixed-point RTL implementation on FPGA.
 
 ---
 
@@ -186,6 +186,10 @@ To address the limitations discovered during Objective I, three extended validat
 ### Extended Experiment 1: Direct Clutter-Proximity Sweep
 - **Objective:** Measure weak-target detectability across every contiguous range bin from $R_t=64$ through $R_t=80$ (17 bins) across 2 target Dopplers ($+1.0, +2.0$), 2 clutter Dopplers ($0.0, 0.3$), and 10 random seeds (680 total runs).
 - **Execution Status:** **Pilot Phase Completed & Audited** (4 runs: $R_t \in \{64, 70, 72, 76\}$); full 680-run sweep automated in [`run_clutter_proximity_sweep.py`](tests/extended_validation/clutter_proximity_sweep/run_clutter_proximity_sweep.py) and ready for execution.
+- **Methodology & Geometry Distinction:**
+  - *Direct Target-Present Measurements:* Verified at $R_t=70$ in baseline Step 7 and T06/T07 ($P_d = 0.00$), and at $R_t \in \{64, 70, 72, 76\}$ in the 4-run pilot.
+  - *Clutter Contamination Geometry:* Stationary clutter at $R_c = 72$ spans mainlobe bins $\{71, 72, 73\}$. With guard cells $G=2$ and reference cells $N_{\text{side}}=4$, reference cells overlap the clutter mainlobe whenever $|r - 72| \in [2, 7]$ ($r \in [65, 70] \cup [74, 79]$), while $|r - 72| \le 1$ ($r \in [71, 73]$) sits directly on the clutter peak. This defines the **15-bin clutter-degraded region ($r \in [65, 79]$)**.
+  - *Post-Hoc Analytical Projection:* Evaluates expected threshold inflation and TCR collapse across all 17 bins using measured C01/C02 profiles; full empirical 680-run validation remains configured for execution.
 - **Pilot Findings:**
   - At $R_t=70$ and $R_t=72$, clutter mainlobe energy inside the reference window inflates the local CFAR threshold to $3.51 \times 10^6\,\mathrm{LSB}^2$ ($+37.8\,\mathrm{dB}$ above noise), driving exact-cell detection margin to **$-23.96\,\mathrm{dB}$** ($P_d = 0.00$).
   - At $R_t=64$ (outside the 7-bin reference radius), the threshold drops to $252.1\,\mathrm{LSB}^2$, recovering detection margin to **$+17.48\,\mathrm{dB}$** ($P_d = 1.00$).
@@ -193,30 +197,45 @@ To address the limitations discovered during Objective I, three extended validat
 ### Extended Experiment 2: Empirical CA-CFAR Calibration & ROC Analysis
 - **Objective:** Calibrate the CFAR multiplier $\alpha$ on independent noise datasets to achieve an exact target false alarm rate of $P_{fa}^* = 1.000\%$, and evaluate ROC detection trade-offs.
 - **Execution Status:** **Fully Executed, Audited, and Documented** ([`cfar_calibration_roc_report.md`](docs/objective_1/cfar_calibration_roc_report.md)).
-- **Dataset Scale:** 100 calibration frames ($1.6 \times 10^6$ cells) and 200 independent validation frames ($3.2 \times 10^6$ cells), evaluated across $\alpha \in [5.5, 8.5]$ and 750 target-present runs.
-- **Key Measured Results:**
-  - **Optimal Calibrated Multiplier:** $\mathbf{\alpha^* = 7.4249 \pm 0.041}$ yields an empirical validation $P_{fa} = \mathbf{1.000\%}$ ($95\%$ CI: $[0.989\%, 1.011\%]$). In comparison, the baseline $\alpha=6.0$ yields $P_{fa} = 1.923\%$.
+- **Dataset Reconciliation (1,050 Frames):**
+  - **100 noise-only calibration frames** (seeds 1001–1100, $1.6 \times 10^6$ CUT cells).
+  - **200 independent noise-only validation frames** (seeds 2001–2200, $3.2 \times 10^6$ CUT cells).
+  - **750 target-present simulation frames** (3 environments: `clutter_free`, `clutter_distant`, `clutter_adjacent` $\times$ 5 target amplitudes $A_t \in [0.001, 0.10]$ $\times$ 50 Monte Carlo seeds 3001–3050).
+  - Total: $100 + 200 + 750 = \mathbf{1{,}050 \text{ unique CPI simulation frames}}$.
+- **Key Measured Results & Statistical CI Reconciliation:**
+  - **Optimal Calibrated Multiplier:** $\mathbf{\alpha^* = 7.4249}$ achieves empirical validation $P_{fa} = \mathbf{1.000\%}$.
+  - **Cluster-Robust 95% Confidence Interval:** Accounting for positive intra-frame cell correlation (Hann window tapering and reference window overlap) across the 200 independent validation frames ($\nu = 199$), the frame-level standard error of the mean is $\mathrm{SEM} = 0.0081\%$, yielding a **$95\%$ Student-$t$ confidence interval of $[0.984\%, 1.016\%]$**.
+  - **Naive Binomial Wilson Score Comparison:** Under the assumption of $3.2 \times 10^6$ independent Bernoulli trials (which ignores spatial correlation), the naive Wilson interval is $[0.989\%, 1.011\%]$. The cluster-robust interval appropriately reflects the true sample variance.
   - **Detection Margin Penalty:** Increasing $\alpha$ from $6.0$ to $7.425$ suppresses false alarms by $48\%$, but imposes a **$-0.93\,\mathrm{dB}$ detection margin penalty**.
   - **Weak-Target Sensitivity Collapse:** For weak targets ($A_t=0.03$) at $R_t=70$ under near-zero Doppler clutter ($d_c=0.3$), the margin drops from $+1.04\,\mathrm{dB}$ (marginal detection) to **$-0.07\,\mathrm{dB}$ (missed detection)**.
 
 ```
-CFAR Multiplier (α) vs. Measured False Alarm Probability (Pfa)
-─────────────────────────────────────────────────────────────────────────────
-α = 5.50  ──►  Pfa = 2.457%  [95% CI: 2.440% - 2.474%]
-α = 6.00  ──►  Pfa = 1.923%  [95% CI: 1.908% - 1.938%]  <-- Objective I Baseline
-α = 6.50  ──►  Pfa = 1.543%  [95% CI: 1.529% - 1.556%]
-α = 7.00  ──►  Pfa = 1.250%  [95% CI: 1.238% - 1.262%]
-α = 7.425 ──►  Pfa = 1.000%  [95% CI: 0.989% - 1.011%]  <-- Calibrated Pfa = 1.0% Target
-α = 8.00  ──►  Pfa = 0.742%  [95% CI: 0.733% - 0.751%]
-α = 8.50  ──►  Pfa = 0.584%  [95% CI: 0.576% - 0.592%]
+CFAR Multiplier (α) vs. Empirical False-Alarm Probability (Pfa) on 200 Validation Frames
+─────────────────────────────────────────────────────────────────────────────────────────────
+α = 5.5000 ──► Pfa = 2.413%  [Cluster-Robust 95% CI: 2.390% - 2.436%] (SEM = 0.0118%)
+α = 6.0000 ──► Pfa = 1.896%  [Cluster-Robust 95% CI: 1.875% - 1.917%] (SEM = 0.0109%) <-- Baseline
+α = 6.5000 ──► Pfa = 1.504%  [Cluster-Robust 95% CI: 1.485% - 1.524%] (SEM = 0.0099%)
+α = 7.0000 ──► Pfa = 1.202%  [Cluster-Robust 95% CI: 1.184% - 1.220%] (SEM = 0.0091%)
+α = 7.4249 ──► Pfa = 1.000%  [Cluster-Robust 95% CI: 0.984% - 1.016%] (SEM = 0.0081%) <-- Calibrated 1%
+α = 7.5000 ──► Pfa = 0.970%  [Cluster-Robust 95% CI: 0.954% - 0.986%] (SEM = 0.0081%)
+α = 8.0000 ──► Pfa = 0.790%  [Cluster-Robust 95% CI: 0.776% - 0.804%] (SEM = 0.0072%)
+α = 8.5000 ──► Pfa = 0.649%  [Cluster-Robust 95% CI: 0.636% - 0.662%] (SEM = 0.0065%)
 ```
 
 ### Extended Experiment 3: Fixed-Gain ADC & Quantisation Robustness
 - **Objective:** Evaluate unscaled fixed-gain analog front-end operation versus dynamic scaling under increasing clutter amplitude ($A_c \in [0.0..3.0]\,\mathrm{V}$) and gain sweeps ($G \in [500..10000]\,\mathrm{LSB/V}$).
 - **Execution Status:** **Fully Executed, Audited, and Documented** ([`adc_fixed_gain_report.md`](docs/objective_1/adc_fixed_gain_report.md)).
+- **Dataset Reconciliation (400 Runs):**
+  - **180 runs:** Fixed gain sweep across 9 gain settings ($G \in [500..10000]$) $\times$ 20 random seeds.
+  - **220 runs:** Clutter amplitude sweep across 11 clutter levels ($A_c \in [0.0..3.0]$) $\times$ 20 random seeds.
+  - Total: $180 + 220 = \mathbf{400 \text{ unique simulation runs}}$.
 - **Key Measured Results:**
   - **Nominal Operating Point:** $G = 2200.0\,\mathrm{LSB/V}$ achieves $0.0\%$ clipping, an **SQNR of $69.7\,\mathrm{dB}$**, and matches dynamic scaling margins within $0.01\,\mathrm{dB}$.
   - **Saturation & Harmonic Splatter:** When clutter amplitude exceeds $A_c \ge 1.5\,\mathrm{V}$, clipping exceeds $54\%$, SQNR collapses below $10\,\mathrm{dB}$, and third- and fifth-order odd harmonics splatter across the Doppler spectrum, raising the noise floor by **$+5.34\,\mathrm{dB}$** and destroying weak target detection.
+
+### Extended Validation Execution Reconciliation Summary
+- **Unique CPI Simulation Runs/Frames Executed:**  
+  $$\mathbf{4 \text{ (Exp 1 pilot)}} + \mathbf{1{,}050 \text{ (Exp 2 frames)}} + \mathbf{400 \text{ (Exp 3 runs)}} = \mathbf{1{,}454 \text{ unique CPI simulations}}.$$
 
 ### Automated Unit Test Suite & CI Automation
 - **Coverage:** 26 automated unit tests across 12 functional DSP areas ([`tests/unit/`](tests/unit/)):
@@ -370,12 +389,12 @@ radar-objective-1/
 │   └── scripts/                            # Standalone audit & verification runners
 │
 ├── hardware/
-│   └── objective_2/                        # Objective II FPGA/ASIC hardware transition
-│       ├── rtl/                            # Verilog/SystemVerilog RTL implementations
-│       ├── testbench/                      # UVM / Cocotb simulation testbenches
-│       ├── reference/                      # Bit-accurate C++/Python hardware models
-│       ├── test_vectors/                   # Golden 16,384-line I/Q test vectors & outputs
-│       └── documentation/                  # Register maps & interface timing specs
+│   └── objective_2/                        # Planned Objective II hardware scaffold
+│       ├── rtl/                            # Planned: Verilog/SystemVerilog RTL implementations (.gitkeep)
+│       ├── testbench/                      # Planned: UVM / Cocotb simulation testbenches (.gitkeep)
+│       ├── reference/                      # Planned: Bit-accurate C++/Python hardware models (.gitkeep)
+│       ├── test_vectors/                   # Planned: Golden 16,384-line I/Q test vectors (.gitkeep)
+│       └── documentation/                  # Planned: Register maps & interface timing specs (.gitkeep)
 │
 ├── configs/
 │   ├── objective_1/                        # Objective I JSON parameter configurations

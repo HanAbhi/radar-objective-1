@@ -7,7 +7,16 @@ from conftest import (
 
 
 def run_mini_pipeline(target_amp, clutter_amp, noise_amp, target_r, target_d, clutter_r, clutter_d, seed, fixed_gain=None):
-    """Mini helper executing exact frozen radar pipeline."""
+    """Mini helper executing exact frozen radar pipeline with parameter validation."""
+    if not 0 <= target_r < NR:
+        raise ValueError("TARGET_RANGE_BIN must be between 0 and NR - 1.")
+    if not 0 <= clutter_r < NR:
+        raise ValueError("CLUTTER_RANGE_BIN must be between 0 and NR - 1.")
+    if not -(ND // 2) <= target_d <= (ND - 1) // 2:
+        raise ValueError("TARGET_DOPPLER_BIN is outside the valid range.")
+    if not -(ND // 2) <= clutter_d <= (ND - 1) // 2:
+        raise ValueError("CLUTTER_DOPPLER_BIN is outside the valid range.")
+
     rng = np.random.RandomState(seed)
     n = np.arange(NR)
     m = np.arange(ND)
@@ -96,28 +105,31 @@ def test_target_absent_noise_only_pfa():
 
 def test_parameter_validation_error_cases():
     """Verify that illegal parameter combinations raise expected ValueError exceptions."""
-    # Test cases that must be rejected:
     # 1. Invalid Doppler bin (> ND//2)
     with pytest.raises(ValueError, match="TARGET_DOPPLER_BIN is outside the valid range"):
-        d_bad = 20.0
-        if not -(ND // 2) <= d_bad <= (ND - 1) // 2:
-            raise ValueError("TARGET_DOPPLER_BIN is outside the valid range.")
+        run_mini_pipeline(
+            target_amp=0.03, clutter_amp=0.0, noise_amp=0.08,
+            target_r=70, target_d=20.0, clutter_r=72, clutter_d=0.0, seed=42
+        )
             
     # 2. Invalid Range bin (>= NR)
     with pytest.raises(ValueError, match="TARGET_RANGE_BIN must be between 0 and NR - 1"):
-        r_bad = 600
-        if not 0 <= r_bad < NR:
-            raise ValueError("TARGET_RANGE_BIN must be between 0 and NR - 1.")
+        run_mini_pipeline(
+            target_amp=0.03, clutter_amp=0.0, noise_amp=0.08,
+            target_r=600, target_d=2.0, clutter_r=72, clutter_d=0.0, seed=42
+        )
             
-    # 3. Negative guard cells
-    with pytest.raises(ValueError, match="The number of guard cells cannot be negative"):
-        g_bad = -1
-        if g_bad < 0:
-            raise ValueError("The number of guard cells cannot be negative.")
+    # 3. Invalid Clutter Range bin (>= NR)
+    with pytest.raises(ValueError, match="CLUTTER_RANGE_BIN must be between 0 and NR - 1"):
+        run_mini_pipeline(
+            target_amp=0.03, clutter_amp=0.0, noise_amp=0.08,
+            target_r=70, target_d=2.0, clutter_r=800, clutter_d=0.0, seed=42
+        )
             
-    # 4. Zero reference cells
-    with pytest.raises(ValueError, match="At least one reference cell per side is required"):
-        ref_bad = 0
-        if ref_bad < 1:
-            raise ValueError("At least one reference cell per side is required.")
+    # 4. Invalid Clutter Doppler bin (< -ND//2)
+    with pytest.raises(ValueError, match="CLUTTER_DOPPLER_BIN is outside the valid range"):
+        run_mini_pipeline(
+            target_amp=0.03, clutter_amp=0.0, noise_amp=0.08,
+            target_r=70, target_d=2.0, clutter_r=72, clutter_d=-25.0, seed=42
+        )
 
