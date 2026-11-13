@@ -381,6 +381,10 @@ Key statistical findings from Step 7:
 
 ## 15. Clutter-Proximity Investigation
 
+> [!NOTE]
+> **Methodological Scope of Clutter-Proximity Analysis:**  
+> Direct target-present empirical validation in Objective I was executed specifically at $R_t = 70$. The range profile analysis below evaluates the reference-window contamination geometry and calculates the resulting threshold inflation across bins $64–80$ from measured clutter profiles. The complete empirical 680-run target-present sweep across all 17 contiguous bins is formulated as Extended Validation Experiment 1 (with a 4-run pilot verified, and the full sweep pending execution).
+
 `analyze_clutter_proximity.py` inspected bins `64–80` (focus `66–78` around $r_c = 72$) across all `210` multi-seed/statistical runs (`outputs_512x32_clutter_investigation/`):
 
 ### 15.1 Exact Reference-Window Contamination Geometry
@@ -391,7 +395,7 @@ With `GUARD = 2`, `REF = 4`, and Hann mainlobe `{71, 72, 73}`, targets at range 
 - `r = 67, 68, 76, 77` (`|Δr| = 4, 5`): Ingests **all 3** clutter mainlobe bins (`71;72;73`).
 - `r = 71, 72, 73` (`|Δr| <= 1`): Reference window is clean, but the **CUT sits on the `1.42e6–5.65e6` clutter mainlobe**.
 
-### 15.2 Weak-Target (`0.03`) Recovery & Clutter Sidelobe Findings
+### 15.2 Weak-Target (`0.03`) Recovery & Threshold Projections (Calculated from Measured Clutter Profiles)
 
 | Range Separation ($\Delta r = r - 72$) | Bins | Clutter Bins in Ref Window | Dop `+1.0` (`c=0.0` / `0.3`) CA-CFAR Margin (dB) | Dop `+2.0` (`c=0.0` / `0.3`) CA-CFAR Margin (dB) | Status (`0.03` Target) |
 |---|---|---|---|---|---|

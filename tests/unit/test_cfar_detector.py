@@ -30,6 +30,17 @@ def test_cfar_guard_and_reference_cell_indices():
     
     total_ref_cells = len(left_ref_indices) + len(right_ref_indices)
     assert total_ref_cells == 8
+    
+    # Verify exact consecutive decision overlap at r and r + 1:
+    # Consecutive window shifts by 1 bin. 3 left cells and 3 right cells are shared = 6 cells (75% overlap).
+    next_r = test_r + 1
+    next_left = set(range(next_r - GUARD_CELLS_PER_SIDE - REFERENCE_CELLS_PER_SIDE, next_r - GUARD_CELLS_PER_SIDE))
+    next_right = set(range(next_r + GUARD_CELLS_PER_SIDE + 1, next_r + GUARD_CELLS_PER_SIDE + 1 + REFERENCE_CELLS_PER_SIDE))
+    next_ref = next_left.union(next_right)
+    current_ref = set(left_ref_indices).union(set(right_ref_indices))
+    overlap = current_ref.intersection(next_ref)
+    assert len(overlap) == 6
+    assert overlap == {95, 96, 97, 104, 105, 106}
 
 
 def test_cfar_valid_boundary_bins():

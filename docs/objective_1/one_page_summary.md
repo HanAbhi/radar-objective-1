@@ -26,7 +26,7 @@
 
 ## 3. Core Technical Conclusions & Clutter-Proximity Breakdown
 1. **Validated Core Pipeline:** Transform gain (`+38.48 dB`), clutter-free weak-target detectability (`100/100` across `R = 40, 120, 200, 300, 450`), and calibrated background $P_{fa}$ (`1.59%` Global, `1.92%` CA-CFAR) are statistically proven.
-2. **15-Bin Clutter Vulnerability Corridor (`r = 65–79`, `|Δr| <= 7`):** With Hann range mainlobe clutter across `{71, 72, 73}` and range-only CA-CFAR (`G = 2, N_side = 4`), clutter enters the reference window for all targets at `|Δr| = 2..7` and swamps the CUT at `|Δr| <= 1`.
+2. **15-Bin Clutter Vulnerability Corridor (`r = 65–79`, `|Δr| <= 7`):** With Hann range mainlobe clutter across `{71, 72, 73}` and range-only CA-CFAR (`G = 2, N_side = 4`), clutter enters the reference window for all targets at `|Δr| = 2..7` and swamps the CUT at `|Δr| <= 1`. (Geometrically predicted from C01/C02 profiles; complete empirical 680-run sweep remains pending).
 3. **Joint Failure Mechanism:** Stationary Hann Doppler mainlobe (`d = +1`) plus fractional off-grid Doppler leakage (`d_c = 0.3` boosts `d = +2` power **75×–76×** to `~57,825`) overwhelms arithmetic mean CA-CFAR (`-13.2 to -17.3 dB` masking at $d_t \le 1$; `+1.04 dB` near-failure at $d_t = +2, d_c = 0.3$). Full recovery requires **`|Δr| >= 8`** (`r <= 64` or `r >= 80`).
 
 ## 4. Top Unresolved Technical Limitations Carried to Objective II

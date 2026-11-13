@@ -12,7 +12,7 @@
 
 ### Priority 2 — CFAR Architecture & Detector Limitations
 3. **Range-Only CA-CFAR 15-Bin Clutter-Degraded Masking Region for Weak Targets (`r = 65–79`):**  
-   Sliding CA-CFAR operates strictly along fast-time (`GUARD = 2`, `REF = 4`) across a single Doppler row. Because clutter at $r_c = 72$ spans `{71, 72, 73}`, arithmetic mean estimation (`np.mean`) pulls clutter into reference windows for **`|r - 72| in [2, 7]`**, inflating local thresholds by **40×–2,000×** and suppressing weak targets ($A_t = 0.03$). Full weak-target sensitivity recovers only at **`|Δr| >= 8`** (`r <= 64` or `r >= 80`).
+   Sliding CA-CFAR operates strictly along fast-time (`GUARD = 2`, `REF = 4`) across a single Doppler row. Because clutter at $r_c = 72$ spans `{71, 72, 73}`, arithmetic mean estimation (`np.mean`) pulls clutter into reference windows for **`|r - 72| in [2, 7]`**, inflating local thresholds by **40×–2,000×** and suppressing weak targets ($A_t = 0.03$). Full weak-target sensitivity recovers only at **`|Δr| >= 8`** (`r <= 64` or `r >= 80`). (Geometrically predicted and empirically verified at $R_t=70$; the complete 680-run sweep across all 17 contiguous bins is formulated in Extended Exp 1 and remains pending execution).
 4. **Susceptibility of Arithmetic-Mean (`CA`) Reference to Outliers & Multi-Target Masking:**  
    Even a single clutter bin (`71` or `73` at `|Δr| = 2` or `7`) raises the weak-target Doppler `+1` threshold to `~294k–580k`. Order-Statistic (OS-CFAR), Greatest/Smallest-Of (GO/SO-CFAR), trimmed-mean, or Doppler-excluding 2D CFAR strategies were not implemented in Objective I.
 5. **Hann-Induced Reference Correlation Excess False Alarms (`1.92%` vs. `1.14%` i.i.d.):**  
