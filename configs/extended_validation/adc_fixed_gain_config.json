@@ -1,0 +1,25 @@
+{
+  "experiment_id": "EXP03_adc_fixed_gain_quantization",
+  "description": "Extended Validation Experiment 3: Fixed-Gain ADC Quantisation Robustness and Saturation Dynamics",
+  "parameters": {
+    "nr": 512,
+    "nd": 32,
+    "adc_bits": 12,
+    "adc_max": 2047,
+    "adc_min": -2048,
+    "target_amplitude": 0.03,
+    "target_range_bin": 120,
+    "target_doppler_bin": 2.0,
+    "clutter_range_bin": 72,
+    "clutter_doppler_bin": 0.0,
+    "noise_amplitude": 0.08,
+    "nominal_fixed_gain": 2200.0,
+    "fixed_gain_sweep": [500, 1000, 1500, 2047, 2500, 3500, 5000, 7500, 10000],
+    "clutter_amplitude_sweep": [0.0, 0.10, 0.25, 0.50, 0.60, 0.80, 1.00, 1.25, 1.50, 2.00, 3.00],
+    "seeds_per_config": 20,
+    "seed_start": 6001,
+    "cfar_alpha": 6.0,
+    "global_threshold_factor": 6.0
+  }
+}
+

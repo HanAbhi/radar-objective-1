@@ -1,7 +1,44 @@
-.venv/
+# Python & Byte-compiled files
 __pycache__/
+*.py[cod]
+*$py.class
 *.pyc
-outputs/
-src/outputs/
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+
+# Scratch, Temporary & Build files
+scratch/
+scratch_*.py
 *_tmp.html
 _chrome_tmp/
+.matplotlib/
+*.bak
+
+# Bulk & Local Archive directories (external storage)
+*archive*/
+outputs/*
+!outputs/.gitkeep
+!outputs/README.md
+outputs_*/
+src/outputs/
+
+# Test caches & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.cache/
+
+# OS metadata
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor & IDE configurations
+.vscode/
+.idea/
+*.swp
+*~

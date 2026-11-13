@@ -1,0 +1,28 @@
+{
+  "experiment_id": "EXP02_cfar_calibration_roc",
+  "description": "Extended Validation Experiment 2: Empirical CA-CFAR Calibration and ROC Analysis",
+  "parameters": {
+    "nr": 512,
+    "nd": 32,
+    "adc_bits": 12,
+    "headroom_scaling": 0.90,
+    "reference_cells_per_side": 4,
+    "guard_cells_per_side": 2,
+    "edge_size": 6,
+    "valid_cells_per_frame": 16000,
+    "noise_amplitude": 0.08,
+    "clutter_amplitude": 0.60,
+    "clutter_range_bin": 72,
+    "clutter_doppler_bin": 0.0,
+    "alpha_test_grid": [5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5],
+    "target_pfa_design": 0.010,
+    "target_amplitudes": [0.001, 0.003, 0.01, 0.03, 0.10],
+    "calibration_frames": 100,
+    "calibration_seed_start": 1001,
+    "validation_frames": 200,
+    "validation_seed_start": 2001,
+    "target_eval_runs_per_amplitude": 50,
+    "target_seed_start": 3001
+  }
+}
+

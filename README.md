@@ -1,34 +1,338 @@
-# Radar Signal Processing – Objective I: Simulation & Validation Baseline
+# Radar Signal Processing: Weak & Slow-Moving Target Detection in Cluttered Environments
 
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Status: Objective I Complete](https://img.shields.io/badge/Status-Objective%20I%20Frozen-success.svg)]()
+[![Build Status](https://img.shields.io/badge/CI-GitHub%20Actions%20Passing-success.svg)](.github/workflows/radar_ci.yml)
+[![Tests: 26/26 Passing](https://img.shields.io/badge/pytest-26%2F26%20passed%20(0.56s)-brightgreen.svg)](tests/unit/)
+[![Status: Objective I Frozen](https://img.shields.io/badge/Objective%20I-Validated%20%26%20Frozen-success.svg)](docs/objective_1/final_audit.pdf)
+[![Status: Objective II Planned](https://img.shields.io/badge/Objective%20II-RTL%20Architecture%20Planned-blue.svg)](docs/objective_2/limitations_handoff.pdf)
 
-A high-fidelity Python baseband radar signal processing reference model and 217-run experimental validation suite for weak and slow-moving target detection in stationary and near-zero-Doppler clutter environments.
+An academic research and engineering portfolio repository presenting the mathematical modeling, algorithmic simulation, statistical validation, and fixed-point hardware analysis of a coherent pulse-Doppler radar receiver designed for weak and slow-moving target detection in severe clutter environments.
 
 ---
 
-## Repository Directory Structure
+## Table of Contents
 
-The repository is organised into a modular research and engineering layout separating the frozen Objective I baseline, documentation, analysis scripts, configurations, and future Objective II hardware/RTL scaffolds:
+1. [Project Overview & Research Motivation](#1-project-overview--research-motivation)
+2. [Problem Statement & Scientific Challenges](#2-problem-statement--scientific-challenges)
+3. [End-to-End Signal Processing Architecture](#3-end-to-end-signal-processing-architecture)
+4. [Objective I Baseline Methodology](#4-objective-i-baseline-methodology)
+5. [Original 217-Run Validation Results](#5-original-217-run-validation-results)
+6. [Extended Validation Experiments & Results](#6-extended-validation-experiments--results)
+   - [Experiment 1: Clutter-Proximity Sweep](#extended-experiment-1-direct-clutter-proximity-sweep)
+   - [Experiment 2: Empirical CA-CFAR Calibration & ROC Analysis](#extended-experiment-2-empirical-ca-cfar-calibration--roc-analysis)
+   - [Experiment 3: Fixed-Gain ADC & Quantisation Robustness](#extended-experiment-3-fixed-gain-adc--quantisation-robustness)
+   - [Automated Unit Test Suite & CI Automation](#automated-unit-test-suite--ci-automation)
+7. [Known Limitations & Failure Modes](#7-known-limitations--failure-modes)
+8. [Multi-Phase Research Roadmap (Objectives I, II, and III)](#8-multi-phase-research-roadmap-objectives-i-ii-and-iii)
+9. [Repository Architecture](#9-repository-architecture)
+10. [Installation & Reproduction Instructions](#10-installation--reproduction-instructions)
+11. [Configuration & Seed Management Policy](#11-configuration--seed-management-policy)
+12. [Primary Reports, Audit Certificates & Data Links](#12-primary-reports-audit-certificates--data-links)
+
+---
+
+## 1. Project Overview & Research Motivation
+
+Modern radar systems operating in littoral, urban, and low-altitude airspace encounter extreme operational challenges: detecting small, slow-moving targets—such as micro-UAVs, walking personnel, or low-RCS surface targets—masked by high-amplitude stationary ground backscatter and near-zero-Doppler clutter (e.g., wind-blown foliage, rain, and sea surface reflections).
+
+In these operating conditions, the radar cross-section (RCS) of targets is minute compared to backscattering clutter, resulting in severe clutter-to-target amplitude disparities ($>26\,\mathrm{dB}$ to $55\,\mathrm{dB}$). The research objective is to develop, simulate, benchmark, and transition a robust baseband radar signal processing pipeline from mathematical simulation through hardware deployment.
+
+### Clear Distinction of Project Phases
+
+This repository enforces strict scientific and engineering boundaries across three formal project phases:
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│ PHASE 1: OBJECTIVE I — SIMULATION & VALIDATION BASELINE (COMPLETED & FROZEN)     │
+│ • Mathematical modeling of target, clutter, AWGN, and 12-bit ADC quantization.   │
+│ • 217-run baseline experimental campaign & statistical audit.                    │
+│ • Extended validation: CFAR calibration (1,050 frames), fixed-gain ADC (400 runs)│
+│ • 26-test unit test suite & multi-platform GitHub Actions CI.                    │
+└────────────────────────────────────────┬─────────────────────────────────────────┘
+                                         │ Golden Vectors & Architecture Specs
+                                         ▼
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│ PHASE 2: OBJECTIVE II — RTL HARDWARE IMPLEMENTATION (PLANNED)                    │
+│ • Bit-accurate fixed-point C++/Python reference models.                          │
+│ • Pipelined streaming Radix-2/4 Range-Doppler FFT in Verilog/SystemVerilog.      │
+│ • Pre-CFAR MTI filter / notch filter & Outlier-robust OS-CFAR logic.             │
+│ • Digital AGC module replacing dynamic per-frame software normalization.         │
+└────────────────────────────────────────┬─────────────────────────────────────────┘
+                                         │ Synthesized Bitstreams & Testbenches
+                                         ▼
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│ PHASE 3: OBJECTIVE III — HARDWARE EVALUATION & SILICON TESTING (PLANNED)         │
+│ • Deployment to AMD Xilinx Zynq UltraScale+ RFSoC / Artix-7 evaluation boards.   │
+│ • Real-time Hardware-in-the-Loop (HIL) latency, resource, and power measurement. │
+│ • RF/ADC loopback characterization with physical noise and clutter injectors.     │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+> [!IMPORTANT]
+> **Scientific Integrity Notice:**  
+> • **Objective I** is fully implemented, empirically validated, audited, and mathematically frozen in `src/radar_model.py`.  
+> • **Extended Validation Experiments 2 & 3** and the **Pytest Suite** are fully executed, verified, and documented.  
+> • **Extended Validation Experiment 1** has completed a 4-run pilot; the full 680-run sweep is automated and configured.  
+> • **Objective II** and **Objective III** represent the planned hardware engineering roadmap and are not reported as executed.
+
+---
+
+## 2. Problem Statement & Scientific Challenges
+
+Detecting weak, slow-moving targets under conventional pulse-Doppler processing presents three coupled failure mechanisms:
+
+1. **Spectral Sidelobe Masking:**  
+   When clutter possesses near-zero velocity (e.g., wind-blown vegetation with fractional Doppler shift $d_c = 0.3$), the clutter spectrum is not aligned with discrete FFT bins. This off-grid frequency shift degrades Hann window sidelobes, elevating Doppler sidelobe leakage by **$+18.8\,\mathrm{dB}$ ($75.4\times$)**, completely burying weak target returns at adjacent Doppler bins ($d_t = +1.0, +2.0$).
+
+2. **CFAR Threshold Inflation & Target Masking:**  
+   Standard Cell-Averaging CFAR (CA-CFAR) estimates the local noise floor by averaging reference cells along range. When a strong clutter mainlobe enters any reference cell, the arithmetic mean inflates the threshold by up to **$+37.8\,\mathrm{dB}$**. This artificially elevates the threshold over a **15-bin region ($|r - 72| \le 7$)**, driving the detection margin of weak targets negative ($-13.2\,\mathrm{dB}$ to $-23.9\,\mathrm{dB}$) and causing total missed detection ($P_d = 0.00$).
+
+3. **ADC Quantization & Dynamic Range Saturation:**  
+   Real-world receivers rely on fixed-gain analog front-ends. Under high clutter amplitudes ($A_c \ge 1.5\,\mathrm{V}$), unscaled 12-bit ADCs enter heavy saturation ($>54\%$ clipping), generating non-linear intermodulation harmonics that elevate the global noise floor by $+5.34\,\mathrm{dB}$ and blind weak targets. Conversely, insufficient gain drops Signal-to-Quantization-Noise Ratio (SQNR) to $56.8\,\mathrm{dB}$.
+
+---
+
+## 3. End-to-End Signal Processing Architecture
+
+The simulation models a coherent pulse-Doppler baseband radar receiver operating over a single Coherent Processing Interval (CPI):
+
+```
+                                      RADAR RECEIVER SIGNAL CHAIN
+                                      
+  Target s_t(t) ──┐
+ Clutter s_c(t) ──┼──►[ Analog Sum ]──►[ 12-bit ADC ]──►[ 2D Hann Window ]──►[ Range FFT ]──►[ Doppler FFT ]──►[ Power Map ]
+   Noise w(t)   ──┘      (V_in)          [-2048, 2047]     w_r(n) * w_d(m)      (512-pt)       (32-pt, shift)     P = |S|^2
+                                                                                                                    │
+                                    ┌───────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ├──►[ Global Median Detector ]────► Threshold T_glob = 6.0 * Median(P) ──► D_glob
+                                    │
+                                    └──►[ 1D Range CA-CFAR ]──────────► Threshold T_cfar = α * Mean(P_ref) ──► D_cfar
+```
+
+### Complete Parameter Specifications
+
+| Parameter | Symbol | Baseline Value | Units | Description |
+|---|:---:|:---:|:---:|---|
+| **Fast-Time Range Samples** | $N_R$ | `512` | samples | Number of range samples per transmitted chirp pulse |
+| **Slow-Time Pulses** | $N_D$ | `32` | chirps | Number of coherent pulses per CPI ($16,384$ total complex samples) |
+| **ADC Resolution** | $B$ | `12` | bits | Signed two's-complement quantizer ($[-2048, +2047]$ LSB) |
+| **Headroom Scaling Factor** | $S$ | `0.90` | — | Dynamic scaling headroom applied to prevent digital clipping |
+| **Range Windowing** | $w_r[n]$ | `Hann` | — | Symmetric Hann window across $N_R=512$, unnormalized discrete sum |
+| **Doppler Windowing** | $w_d[m]$ | `Hann` | — | Symmetric Hann window across $N_D=32$, unnormalized discrete sum |
+| **Range Processing** | — | `512-pt FFT` | — | Discrete Fourier Transform along fast-time axis |
+| **Doppler Processing** | — | `32-pt FFT + shift`| — | DFT along slow-time axis; zero Doppler centered at bin 16 |
+| **Power Metric** | $P[r, d]$ | $|S[r, d]|^2$ | $\mathrm{LSB}^2$ | Unnormalized squared-magnitude power map |
+| **Global Threshold Multiplier** | $K_{\text{glob}}$ | `6.0` | — | Multiplier applied to global median of valid power map |
+| **CA-CFAR Guard Bins** | $G$ | `2` | bins/side | Guard cells on each side of CUT ($4$ guard cells total) |
+| **CA-CFAR Reference Bins** | $N_{\text{side}}$ | `4` | bins/side | Reference cells on each side of CUT ($N_{\text{ref}} = 8$ cells total) |
+| **CA-CFAR Window Type** | — | `1D Range-Sliding`| — | Evaluated strictly along the range axis for each Doppler bin |
+| **Valid Evaluation Mask** | — | `[6, 505]` $\times$ `[0, 31]` | cells | Excludes boundary reference margins; exactly $16,000$ valid CUT cells |
+| **Baseline CFAR Multiplier** | $\alpha$ | `6.0` | — | Theoretical design multiplier for $P_{fa} \approx 10^{-2}$ |
+
+### Window Gains and Mathematical Normalization
+
+Because the discrete Fourier transform executes without scaling ($\frac{1}{N}$ factor omitted), signal and noise powers scale with the 2D window gains:
+
+- **1D Fast-Time Hann ($N_R = 512$):**  
+  $\sum w_r = 255.5$, Coherent Gain $G_{c,r} = (\sum w_r)^2 = 65{,}280.25$ ($+48.15\,\mathrm{dB}$), Noise Gain $G_{n,r} = \sum w_r^2 = 191.625$ ($+22.83\,\mathrm{dB}$), Processing Gain $\mathrm{PG}_r = 340.67$ ($+25.32\,\mathrm{dB}$).
+- **1D Slow-Time Hann ($N_D = 32$):**  
+  $\sum w_d = 15.5$, Coherent Gain $G_{c,d} = 240.25$ ($+23.81\,\mathrm{dB}$), Noise Gain $G_{n,d} = 11.625$ ($+10.65\,\mathrm{dB}$), Processing Gain $\mathrm{PG}_d = 20.67$ ($+13.15\,\mathrm{dB}$).
+- **2D Product Hann ($512 \times 32$):**  
+  $$G_c = G_{c,r} \times G_{c,d} = 15{,}683{,}580.0625 \quad (+71.95\,\mathrm{dB})$$
+  $$G_n = G_{n,r} \times G_{n,d} = 2{,}227.640625 \quad (+33.48\,\mathrm{dB})$$
+  $$\mathbf{\mathrm{PG} = \frac{G_c}{G_n} = 7{,}040.4444 \quad (+38.48\,\mathrm{dB})}$$
+
+Peak output power for an on-grid tone of amplitude $A$ is $P_{\text{peak}} = A^2 G_c$. For nominal amplitudes:
+- Strong Clutter ($A_c = 0.60$): $P_{\text{peak}} \approx 5.646 \times 10^6\,\mathrm{LSB}^2$ ($+67.52\,\mathrm{dB}$).
+- Moderate Target ($A_t = 0.10$): $P_{\text{peak}} \approx 156.84 \times 10^3\,\mathrm{LSB}^2$ ($+51.95\,\mathrm{dB}$).
+- Weak Target ($A_t = 0.03$): $P_{\text{peak}} \approx 14.115 \times 10^3\,\mathrm{LSB}^2$ ($+41.50\,\mathrm{dB}$).
+
+---
+
+## 4. Objective I Baseline Methodology
+
+The Objective I baseline established the algorithmic foundation through strict Monte Carlo protocol:
+1. **Deterministic Benchmark Suite (T01–T05, C01–C02):** Fixed random seed 42, used to isolate individual signal components, verify linear superposition, calibrate 2D window processing gains, and measure the spectral leakage of fractional Doppler clutter.
+2. **Multi-Seed Statistical Campaigns:** Uniform random seeds $1–10$ used to measure statistical variance across independent AWGN realizations.
+3. **Detection Decision Metrics:**
+   - **Exact-Cell $P_d$:** Binary detection strictly at $(R_t, D_t)$.
+   - **Clutter-Excluded $3\times3$ Neighborhood $P_d$:** Binary detection within $[R_t-1..R_t+1] \times [D_t-1..D_t+1]$, with columns $71–73$ (clutter ridge) explicitly masked to prevent false positive attribution.
+   - **Detection Margin ($\mathrm{dB}$):** $10 \log_{10}(P_{\text{CUT}} / T_{\text{threshold}})$. A positive margin guarantees detection; negative indicates a miss.
+
+---
+
+## 5. Original 217-Run Validation Results
+
+All 217 baseline simulation runs have been verified and audited against the underlying CSV run logs and raw I/Q data cubes:
+
+| Experiment Suite | Test Directory | Runs | Parameter Range & Conditions | Key Measured Results |
+|---|---|:---:|---|---|
+| **T01–T05 Benchmarks** | `tests/objective_1/T01_T05/` | 5 | Isolated targets, clutter, and noise; seed 42 | Verified 2D Hann gain ($+38.48\,\mathrm{dB}$). Discovered zero-noise median collapse under $A_n=0.0$. |
+| **C01–C02 Clutter Tests** | `tests/objective_1/C01_C02/` | 2 | Stationary ($d_c=0.0$) vs near-zero ($d_c=0.3$) clutter | Off-grid clutter increases Doppler $+2$ leakage by **$75.4\times$ ($+18.8\,\mathrm{dB}$)** ($759 \to 57{,}825$). |
+| **Step 7 Multi-Seed** | `tests/objective_1/step7_multiseed/` | 40 | Target+clutter+noise, $R_t=70, d_t=+2.0$, seeds 1–10 | Weak targets suffer a **$16.42\,\mathrm{dB}$ margin loss** under $d_c=0.3$ ($+17.46 \to +1.04\,\mathrm{dB}$). |
+| **Step 7 Noise-Only** | `tests/objective_1/noise_only/` | 10 | Pure AWGN ($\sigma_n=0.08$), seeds 1–10, 16,000 cells/run | Global $P_{fa} = 1.589\% \pm 0.162\%$ (Theory: $1.563\%$). CA-CFAR $P_{fa} = 1.923\% \pm 0.136\%$ ($N_{\text{eff}} \approx 4.714$). |
+| **Slow Targets (T06–T07)** | `tests/objective_1/slow_targets/` | 40 | $R_t=70, d_t \in \{+1.0, +0.5\}$, seeds 1–10 | **Observed $P_d = 0/10$ ($0.00$)** for weak targets. Clutter mainlobe overlap yields margins of $-13.20$ to $-17.26\,\mathrm{dB}$. |
+| **Range Robustness** | `tests/objective_1/range_robustness/` | 120 | 6 range bins $\{40, 70, 120, 200, 300, 450\}$, seeds 1–5 | **Observed 5/5 detection** across all 100 clutter-free runs ($R_t \neq 70$, margins $+17.3$ to $+20.0\,\mathrm{dB}$). Misses strictly confined to $R_t=70$. |
+| **Total Baseline Runs** | — | **217** | **100% verified against CSV run logs** | **Audited and frozen in `docs/objective_1/final_audit.pdf`** |
+
+---
+
+## 6. Extended Validation Experiments & Results
+
+To address the limitations discovered during Objective I, three extended validation campaigns and an automated test suite were developed:
+
+### Extended Experiment 1: Direct Clutter-Proximity Sweep
+- **Objective:** Measure weak-target detectability across every contiguous range bin from $R_t=64$ through $R_t=80$ (17 bins) across 2 target Dopplers ($+1.0, +2.0$), 2 clutter Dopplers ($0.0, 0.3$), and 10 random seeds (680 total runs).
+- **Execution Status:** **Pilot Phase Completed & Audited** (4 runs: $R_t \in \{64, 70, 72, 76\}$); full 680-run sweep automated in [`run_clutter_proximity_sweep.py`](tests/extended_validation/clutter_proximity_sweep/run_clutter_proximity_sweep.py) and ready for execution.
+- **Pilot Findings:**
+  - At $R_t=70$ and $R_t=72$, clutter mainlobe energy inside the reference window inflates the local CFAR threshold to $3.51 \times 10^6\,\mathrm{LSB}^2$ ($+37.8\,\mathrm{dB}$ above noise), driving exact-cell detection margin to **$-23.96\,\mathrm{dB}$** ($P_d = 0.00$).
+  - At $R_t=64$ (outside the 7-bin reference radius), the threshold drops to $252.1\,\mathrm{LSB}^2$, recovering detection margin to **$+17.48\,\mathrm{dB}$** ($P_d = 1.00$).
+
+### Extended Experiment 2: Empirical CA-CFAR Calibration & ROC Analysis
+- **Objective:** Calibrate the CFAR multiplier $\alpha$ on independent noise datasets to achieve an exact target false alarm rate of $P_{fa}^* = 1.000\%$, and evaluate ROC detection trade-offs.
+- **Execution Status:** **Fully Executed, Audited, and Documented** ([`cfar_calibration_roc_report.md`](docs/objective_1/cfar_calibration_roc_report.md)).
+- **Dataset Scale:** 100 calibration frames ($1.6 \times 10^6$ cells) and 200 independent validation frames ($3.2 \times 10^6$ cells), evaluated across $\alpha \in [5.5, 8.5]$ and 750 target-present runs.
+- **Key Measured Results:**
+  - **Optimal Calibrated Multiplier:** $\mathbf{\alpha^* = 7.4249 \pm 0.041}$ yields an empirical validation $P_{fa} = \mathbf{1.000\%}$ ($95\%$ CI: $[0.989\%, 1.011\%]$). In comparison, the baseline $\alpha=6.0$ yields $P_{fa} = 1.923\%$.
+  - **Detection Margin Penalty:** Increasing $\alpha$ from $6.0$ to $7.425$ suppresses false alarms by $48\%$, but imposes a **$-0.93\,\mathrm{dB}$ detection margin penalty**.
+  - **Weak-Target Sensitivity Collapse:** For weak targets ($A_t=0.03$) at $R_t=70$ under near-zero Doppler clutter ($d_c=0.3$), the margin drops from $+1.04\,\mathrm{dB}$ (marginal detection) to **$-0.07\,\mathrm{dB}$ (missed detection)**.
+
+```
+CFAR Multiplier (α) vs. Measured False Alarm Probability (Pfa)
+─────────────────────────────────────────────────────────────────────────────
+α = 5.50  ──►  Pfa = 2.457%  [95% CI: 2.440% - 2.474%]
+α = 6.00  ──►  Pfa = 1.923%  [95% CI: 1.908% - 1.938%]  <-- Objective I Baseline
+α = 6.50  ──►  Pfa = 1.543%  [95% CI: 1.529% - 1.556%]
+α = 7.00  ──►  Pfa = 1.250%  [95% CI: 1.238% - 1.262%]
+α = 7.425 ──►  Pfa = 1.000%  [95% CI: 0.989% - 1.011%]  <-- Calibrated Pfa = 1.0% Target
+α = 8.00  ──►  Pfa = 0.742%  [95% CI: 0.733% - 0.751%]
+α = 8.50  ──►  Pfa = 0.584%  [95% CI: 0.576% - 0.592%]
+```
+
+### Extended Experiment 3: Fixed-Gain ADC & Quantisation Robustness
+- **Objective:** Evaluate unscaled fixed-gain analog front-end operation versus dynamic scaling under increasing clutter amplitude ($A_c \in [0.0..3.0]\,\mathrm{V}$) and gain sweeps ($G \in [500..10000]\,\mathrm{LSB/V}$).
+- **Execution Status:** **Fully Executed, Audited, and Documented** ([`adc_fixed_gain_report.md`](docs/objective_1/adc_fixed_gain_report.md)).
+- **Key Measured Results:**
+  - **Nominal Operating Point:** $G = 2200.0\,\mathrm{LSB/V}$ achieves $0.0\%$ clipping, an **SQNR of $69.7\,\mathrm{dB}$**, and matches dynamic scaling margins within $0.01\,\mathrm{dB}$.
+  - **Saturation & Harmonic Splatter:** When clutter amplitude exceeds $A_c \ge 1.5\,\mathrm{V}$, clipping exceeds $54\%$, SQNR collapses below $10\,\mathrm{dB}$, and third- and fifth-order odd harmonics splatter across the Doppler spectrum, raising the noise floor by **$+5.34\,\mathrm{dB}$** and destroying weak target detection.
+
+### Automated Unit Test Suite & CI Automation
+- **Coverage:** 26 automated unit tests across 12 functional DSP areas ([`tests/unit/`](tests/unit/)):
+  1. Signal generation & analytical Euler phase verification.
+  2. Range & Doppler FFT peak localization (parameterized across 6 test points).
+  3. Signed Doppler indexing and `fftshift` mapping.
+  4. 12-bit ADC rounding, clamp bounds $[-2048, +2047]$, and saturation.
+  5. Hann window symmetry, 1D/2D coherent gain, noise gain, and processing gain.
+  6. CA-CFAR guard ($G=2$) and reference ($N_{\text{side}}=4$) cell mask indices.
+  7. CFAR valid boundary bin filtering ($16,000$ valid CUT cells).
+  8. Zero-noise floor collapse and zero-signal purity.
+  9. Deterministic random seed reproducibility across runs.
+  10. Fast-time/slow-time I/Q dimension ordering ($16,384$ samples).
+  11. End-to-end target-present detection and noise-only $P_{fa}$ bounds.
+  12. Fixed-gain vs dynamic-gain SQNR and clipping equivalence.
+- **Performance:** **26 passed in 0.56 seconds**.
+- **Continuous Integration:** Automated multi-platform matrix testing on GitHub Actions ([`.github/workflows/radar_ci.yml`](.github/workflows/radar_ci.yml)) across `ubuntu-latest` and `windows-latest` for Python 3.10, 3.11, and 3.12.
+
+---
+
+## 7. Known Limitations & Failure Modes
+
+Objective I has formally cataloged and quantified five critical failure modes:
+
+1. **Weak-Target Clutter Masking Region ($|r - 72| \le 7$):**  
+   Because CA-CFAR averages reference cells strictly along range without outlier rejection, clutter energy in cells $[r-6..r-3] \cup [r+3..r+6]$ inflates the local threshold by up to $+37.8\,\mathrm{dB}$, completely masking weak targets ($P_d = 0.00$).
+2. **Stationary Clutter Doppler Masking ($|d_t - d_c| \le 1.0$ bin):**  
+   Slow-moving targets falling inside the Hann Doppler mainlobe of stationary clutter ($d_t = +0.5, +1.0$) suffer negative detection margins ($-13.20\,\mathrm{dB}$ to $-17.26\,\mathrm{dB}$) regardless of range separation.
+3. **Fractional Doppler Leakage:**  
+   Non-integer clutter Doppler shifts fill the Hann spectral nulls, spreading $+47.6\,\mathrm{dB}$ of clutter sidelobe energy into adjacent bins and reducing detection margins by $16.42\,\mathrm{dB}$.
+4. **Hardware Unrealistic Dynamic Rescaling:**  
+   The baseline radar model normalizes each frame by peak amplitude ($S = 0.90 / \max(|I|, |Q|)$). In real-world streaming hardware, this causes gain modulation and target suppression.
+5. **Zero-Noise Median Collapse:**  
+   In ideal noiseless simulation ($A_n = 0.0$), unexcited range-Doppler cells evaluate to $0.0$, causing the global median threshold to collapse to zero.
+
+---
+
+## 8. Multi-Phase Research Roadmap (Objectives I, II, and III)
+
+```
+===================================================================================
+PHASE 1: OBJECTIVE I — ALGORITHMIC MODEL & STATISTICAL BASELINE [STATUS: COMPLETE]
+===================================================================================
+ [x] Synthetic pulse-Doppler signal generation (target, clutter, AWGN).
+ [x] 12-bit signed ADC quantizer with saturation and dynamic scaling.
+ [x] 2D separable Hann windowing and Range-Doppler 2D FFT.
+ [x] Dual-stage detection: Global median threshold + 1D Range-Sliding CA-CFAR.
+ [x] 217-run baseline experimental campaign and formal audit.
+ [x] Extended validation: Empirical CFAR calibration (1,050 frames) & ROC curves.
+ [x] Extended validation: Fixed-gain ADC and quantisation robustness (400 runs).
+ [x] Fast 26-test unit test suite & multi-OS GitHub Actions CI workflow.
+ [x] High-resolution clutter-proximity pilot (4 runs audited; 680-run sweep prepared).
+
+===================================================================================
+PHASE 2: OBJECTIVE II — FIXED-POINT RTL HARDWARE ARCHITECTURE [STATUS: PLANNED]
+===================================================================================
+ [ ] Bit-Accurate Fixed-Point Model:
+     • Develop bit-accurate C++/Python fixed-point model (Q1.15 data, Q1.15 twiddles).
+     • Quantize window coefficients and evaluate SQNR degradation (< 0.5 dB target).
+ [ ] Pre-CFAR Clutter Suppression Filter:
+     • Design a 3-pulse MTI canceller or 2nd-order IIR notch filter along slow time.
+     • Target: >= 40 dB rejection at DC to eliminate clutter masking before CFAR.
+ [ ] Outlier-Robust CFAR Architecture:
+     • Replace CA-CFAR with Pipelined Order-Statistic CFAR (OS-CFAR) or GO-CFAR.
+     • Implement 2D cross-Doppler reference censoring to protect boundary cells.
+ [ ] Digital Front-End Automatic Gain Control (AGC):
+     • Implement fast-attack, slow-decay AGC replacing dynamic software scaling.
+ [ ] Streaming RTL Verilog/SystemVerilog Core:
+     • Pipelined Radix-2/Radix-4 streaming 512-point Range FFT with block floating-point.
+     • Corner-turn matrix memory (BRAM) for 512x32 CPI storage.
+     • Pipelined 32-point Doppler FFT with integrated windowing and magnitude-squared.
+     • SystemVerilog UVM testbench driven by Objective I 16,384-line golden test vectors.
+
+===================================================================================
+PHASE 3: OBJECTIVE III — SILICON EVALUATION & HARDWARE TESTING [STATUS: PLANNED]
+===================================================================================
+ [ ] FPGA Implementation & Synthesis:
+     • Target AMD Xilinx Zynq UltraScale+ RFSoC (ZCU111/ZCU208) or Artix-7.
+     • Timing closure at >= 200 MHz system clock.
+     • Resource utilization audit: DSP48E slices, BRAMs, and LUTs.
+ [ ] Real-Time Performance & Power Profiling:
+     • Measure total CPI processing latency (target: < 1.0 ms per CPI).
+     • Dynamic and static power estimation using Xilinx Power Estimator (XPE).
+ [ ] Hardware-in-the-Loop (HIL) Loopback Testing:
+     • Stream golden I/Q vectors via DMA over PCIe / AXI4-Stream to FPGA.
+     • Verify bit-for-bit exact detection output against Objective I reference data.
+```
+
+---
+
+## 9. Repository Architecture
 
 ```
 radar-objective-1/
-├── README.md                               # Project documentation & reference index
-├── requirements.txt                        # Python dependencies
-├── .gitignore                              # Git exclusion rules
-├── path_mapping.json                       # Comprehensive migration map (old paths -> new paths)
+├── README.md                               # Academic review & engineering portfolio README
+├── requirements.txt                        # Python dependencies (includes pytest>=8.0.0)
+├── .gitignore                              # Git exclusion rules (build, venv, large archives)
+├── path_mapping.json                       # Reorganization audit map (original -> new paths)
+│
+├── .github/
+│   └── workflows/
+│       └── radar_ci.yml                    # GitHub Actions CI matrix (Ubuntu/Windows, Py 3.10-3.12)
 │
 ├── docs/
-│   ├── objective_1/                        # Objective I reports & verification documents
-│   │   ├── final_report.pdf                # Comprehensive academic report with 9 figures
+│   ├── objective_1/                        # Objective I academic documentation & audit reports
+│   │   ├── final_report.pdf                # Academic report with 9 publication figures
 │   │   ├── one_page_summary.pdf            # 1-page executive summary & consolidated metric table
-│   │   ├── final_audit.pdf                 # Formal 10-item audit & verification certificate
-│   │   ├── render_pdfs.py                  # HTML/Chrome headless PDF generation pipeline
-│   │   └── figures/                        # High-resolution publication plots (9 figures)
+│   │   ├── final_audit.pdf                 # Formal 10-item audit certificate
+│   │   ├── cfar_calibration_roc_report.md  # Extended Exp 2: CFAR calibration & ROC report
+│   │   ├── adc_fixed_gain_report.md        # Extended Exp 3: Fixed-gain ADC robustness report
+│   │   ├── archive_manifest.csv            # SHA-256 archive manifest for reproducible files
+│   │   ├── render_pdfs.py                  # Headless Chrome PDF generation pipeline
+│   │   └── figures/                        # High-resolution vector/raster publication plots
 │   ├── objective_2/
-│   │   └── limitations_handoff.pdf         # 1-page prioritized technical limitation handoff
-│   └── architecture/                       # System block diagrams & specification sheets
+│   │   └── limitations_handoff.pdf         # Objective II prioritized limitation handoff report
+│   └── architecture/                       # Signal processing block diagrams & timing specs
 │
 ├── src/
 │   ├── radar_model.py                      # Frozen baseband radar simulation reference model
@@ -37,6 +341,14 @@ radar-objective-1/
 │   └── utils/                              # Mathematical helpers & DSP utilities
 │
 ├── tests/
+│   ├── unit/                               # Fast unit test suite (26 tests, 0.56s)
+│   │   ├── conftest.py                     # Shared radar test fixtures & constants
+│   │   ├── test_signal_generation.py       # Phase, seed reproducibility, dimensions, zero-noise
+│   │   ├── test_fft_and_windowing.py       # FFT peak locations, signed Doppler, Hann gains
+│   │   ├── test_adc_quantization.py        # 12-bit ADC, saturation, fixed vs dynamic gain
+│   │   ├── test_cfar_detector.py           # Guard/ref masks, boundary bins, clutter masking
+│   │   └── test_end_to_end_detection.py    # Target-present, noise-only Pfa, input validation
+│   │
 │   ├── objective_1/                        # 217-run validated experimental suites
 │   │   ├── T01_T05/                        # Benchmark diagnostics (5 runs, seed 42)
 │   │   ├── C01_C02/                        # Stationary vs near-zero clutter (2 runs, seed 42)
@@ -44,163 +356,138 @@ radar-objective-1/
 │   │   ├── noise_only/                     # Pure AWGN calibration baseline (10 runs, seeds 1-10)
 │   │   ├── slow_targets/                   # Slow-target sweeps T06/T07 (40 runs) & runner
 │   │   └── range_robustness/               # Range sweeps across 6 bins (120 runs) & runner
-│   ├── extended_validation/                # Extended research & edge-case testbenches
-│   │   ├── clutter_proximity_sweep/
-│   │   ├── cfar_calibration/
-│   │   ├── adc_fixed_gain/
-│   │   ├── boundary_tests/
-│   │   ├── fractional_bin_tests/
-│   │   ├── multi_target_tests/
-│   │   └── detector_comparison/
-│   └── unit/                               # Fast unit tests for DSP blocks
+│   │
+│   └── extended_validation/                # Extended research & edge-case testbenches
+│       ├── clutter_proximity_sweep/        # Exp 1 runner (run_clutter_proximity_sweep.py) & pilot
+│       ├── cfar_calibration/               # Exp 2 runner, CSVs, and ROC curves
+│       └── adc_fixed_gain/                 # Exp 3 runner, CSVs, and clipping/SQNR plots
 │
 ├── analysis/
 │   ├── objective_1/                        # Objective I analysis scripts & artifacts
-│   │   ├── audit_step7.py                  # Full statistical audit script for 50 Step 7 runs
+│   │   ├── audit_step7.py                  # Statistical audit script for 50 Step 7 runs
 │   │   ├── analyze_clutter_proximity.py    # 210-run clutter proximity failure analysis
 │   │   └── clutter_investigation/          # Diagnostic range profiles, TCR curves & CSVs
-│   ├── extended_validation/                # Extended study analyses
 │   └── scripts/                            # Standalone audit & verification runners
-│       ├── audit_step7.py
-│       └── analyze_clutter_proximity.py
 │
 ├── hardware/
 │   └── objective_2/                        # Objective II FPGA/ASIC hardware transition
 │       ├── rtl/                            # Verilog/SystemVerilog RTL implementations
 │       ├── testbench/                      # UVM / Cocotb simulation testbenches
-│       ├── reference/                      # Bit-accurate C/Python hardware models
-│       ├── test_vectors/                   # Golden I/Q test vectors & outputs
+│       ├── reference/                      # Bit-accurate C++/Python hardware models
+│       ├── test_vectors/                   # Golden 16,384-line I/Q test vectors & outputs
 │       └── documentation/                  # Register maps & interface timing specs
 │
 ├── configs/
-│   ├── objective_1/                        # Objective I YAML/JSON parameter configs
-│   └── extended_validation/                # Extended study parameter profiles
+│   ├── objective_1/                        # Objective I JSON parameter configurations
+│   └── extended_validation/                # Extended study parameter profiles (Exp 1, 2, 3)
 │
-└── outputs/                                # Scratch directory for active run outputs
-    ├── .gitkeep
-    └── README.md
+└── outputs/                                # Scratch directory for active run outputs (.gitkeep)
 ```
 
 ---
 
-## Signal Processing Architecture & Parameters
+## 10. Installation & Reproduction Instructions
 
-The simulation models a coherent pulse-Doppler radar receiver operating over a single Coherent Processing Interval (CPI):
+### Prerequisites
+- Python 3.10, 3.11, or 3.12.
+- Git.
+- Recommended: Windows PowerShell or Linux Bash.
 
-| Parameter | Symbol | Value | Description |
-|---|:---:|:---:|---|
-| Fast-time range samples / FFT size | $N_R$ | `512` | Samples per chirp pulse |
-| Slow-time chirps / Doppler FFT size | $N_D$ | `32` | Chirps per Coherent Processing Interval (CPI) |
-| Total CPI data cube | $N_R \times N_D$ | `16,384` | Complex baseband samples |
-| ADC Quantization | $B$ | `12` bits | Signed two's-complement $[-2048, +2047]$ I/Q |
-| Headroom Scaling | $S$ | `0.90` | ADC full-scale utilization |
-| Windowing | $w_r, w_d$ | `np.hanning` | Separable symmetric Hann tapering along range and Doppler |
-| Global Threshold Multiplier | $K_{\text{glob}}$ | `6.0` | Multiplies global frame median of power |
-| CA-CFAR Guard Bins per Side | $G$ | `2` | Total 4 guard cells around CUT |
-| CA-CFAR Reference Bins per Side | $N_{\text{side}}$ | `4` | Total $N_{\text{ref}} = 8$ reference cells along range |
-| CFAR Evaluation Range | $[E, N_R - E - 1]$ | `[6, 505]` | Exactly `16,000` valid cells evaluated per CPI |
-| CA-CFAR Multiplier | $\alpha_{\text{CFAR}}$ | `6.0` | Multiplies local arithmetic mean of reference cells |
-
-### Window Gains & Normalization
-Because NumPy's `np.fft.fft` uses unnormalized discrete Fourier transform sums, power values scale with the 2D window coherent gain:
-- **1D Range Hann ($N_R = 512$):** $\sum w_r = 255.5$, $G_{c,r} = 65{,}280.25$ ($+48.15\,\mathrm{dB}$), $G_{n,r} = 191.625$ ($+22.83\,\mathrm{dB}$), $\mathrm{PG}_r = 340.67$ ($+25.32\,\mathrm{dB}$).
-- **1D Doppler Hann ($N_D = 32$):** $\sum w_d = 15.5$, $G_{c,d} = 240.25$ ($+23.81\,\mathrm{dB}$), $G_{n,d} = 11.625$ ($+10.65\,\mathrm{dB}$), $\mathrm{PG}_d = 20.67$ ($+13.15\,\mathrm{dB}$).
-- **2D Product Hann ($512 \times 32$):** $G_c = 15{,}683{,}580.0625$ ($+71.95\,\mathrm{dB}$), $G_n = 2{,}227.640625$ ($+33.48\,\mathrm{dB}$), $\mathbf{\mathrm{PG} = 7{,}040.4444} \;\; (\mathbf{+38.48\,\mathrm{dB}})$.
-- **Output Peak Scaling:** An on-grid tone $A e^{j\phi}$ produces peak RD power $P_{\text{peak}} = A^2 G_c$ ($A=0.60 \to 5.65 \times 10^6$; $A=0.10 \to 156.8 \times 10^3$; $A=0.03 \to 14.12 \times 10^3$).
-
----
-
-## 217-Run Validation Campaign Summary
-
-Across Objective I, a total of **217 simulation runs** were executed and audited (7 deterministic benchmark runs + 210 multi-seed sweep runs). Every single run generated an exact 16,384-line 12-bit signed I/Q file and comprehensive CSV metadata:
-
-| Test Suite | Location | Runs | Parameters Tested | Key Findings |
-|---|---|:---:|---|---|
-| **T01–T05 Diagnostics** | `tests/objective_1/T01_T05/` | 5 | Isolated target, clutter, and noise baselines (seed 42) | Confirmed linearity, 2D Hann gains, and identified zero-noise median collapse under $A_n = 0$. |
-| **C01–C02 Clutter Tests** | `tests/objective_1/C01_C02/` | 2 | Stationary ($d_c = 0.0$) vs. near-zero-Doppler ($d_c = 0.3$) clutter | Fractional clutter shifts off-grid, boosting Doppler $+2$ leakage by **75.4×** ($759 \to 57{,}825$). |
-| **Step 7 Target-Present** | `tests/objective_1/step7_multiseed/` | 40 | Moderate ($0.10$) & weak ($0.03$) targets at $R_t=70, d_t=+2.0$, seeds 1–10 | Weak targets suffer a **16.4 dB CFAR margin collapse** under $d_c = 0.3$ ($+17.46 \to +1.04\,\mathrm{dB}$, min $+0.76\,\mathrm{dB}$). |
-| **Step 7 Noise-Only** | `tests/objective_1/noise_only/` | 10 | Pure circular complex AWGN ($\sigma_n = 0.08$, seeds 1–10) | Global $P_{fa} = 1.589\% \pm 0.162\%$ (theory $1.563\%$). CFAR $P_{fa} = 1.923\% \pm 0.136\%$ ($N_{\text{eff}} \approx 4.714$ predicts $2.09\%$). |
-| **Slow Targets T06–T07** | `tests/objective_1/slow_targets/` | 40 | Weak targets at $d_t = +1.0$ (T06) and $d_t = +0.5$ (T07) at $R_t=70$ | Exact CA-CFAR $P_d = \mathbf{0.00}$ (margins $-13.20$ to $-17.26\,\mathrm{dB}$) due to stationary clutter Hann mainlobe overlap. |
-| **Target Range Robustness** | `tests/objective_1/range_robustness/` | 120 | 6 ranges $\{40, 70, 120, 200, 300, 450\}$, 2 target Dop, 2 clutter Dop, 5 seeds | **Observed 5/5 detection** across all 100 clutter-free runs ($R \neq 70$, margins $+17.3$ to $+20.0\,\mathrm{dB}$). Failures strictly isolated to $R_t = 70$. |
-| **Clutter Proximity Analysis** | `analysis/objective_1/clutter_investigation/` | — | High-resolution sweep across bins $64–80$ ($210$-run synthesis) | Pinpointed a **15-bin clutter-degraded masking region** for weak targets ($|r - 72| \le 7$, $r \in [65, 79]$); full recovery requires $|r - 72| \ge 8$. |
-
----
-
-## Key Technical Takeaways & Clutter Degradation Profile
-
-1. **Weak-Target Clutter-Degraded Masking Region ($|r - 72| \le 7$):**  
-   Because CA-CFAR averages 8 reference cells strictly along range without outlier censoring, any single clutter mainlobe bin ($\{71, 72, 73\}$) inside $[r-6..r-3] \cup [r+3..r+6]$ inflates the local threshold to $\sim 294{,}000–580{,}000$ (a 40×–2,000× increase). This desensitizes the detector to weak targets ($A_t = 0.03$, power $\approx 14{,}115$), causing negative margins ($-13.2$ to $-23.9\,\mathrm{dB}$). Moderate targets ($A_t = 0.10$) retain positive margin ($+11.54\,\mathrm{dB}$) in the same cells.
-2. **Near-Zero-Doppler Clutter Leakage ($d_c = 0.3$):**  
-   Moving clutter off the integer grid fills the Hann spectral nulls, spreading $+47.6\,\mathrm{dB}$ of clutter leakage into Doppler bin $+2$, eroding $16.4\,\mathrm{dB}$ of CFAR margin.
-3. **Metric Discrimination:**  
-   Unmasked $3\times3$ target neighborhood metrics falsely pick up the range 71 clutter shoulder ($P_d = 1.00$). Masking clutter columns $[71..73]$ proves true exact-cell target detection is $0.00$ for slow weak targets.
-
----
-
-## Getting Started
-
-### 1. Environment Setup
+### Step 1: Clone Repository & Set Up Environment
 
 ```bash
-# Clone repository
 git clone git@github.com:HanAbhi/radar-objective-1.git
 cd radar-objective-1
 
-# Create and activate virtual environment
+# Create virtual environment
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1    # On Windows PowerShell
-source .venv/bin/activate       # On Linux/macOS
 
-# Install dependencies
+# Activate virtual environment
+# Windows PowerShell:
+.\.venv\Scripts\Activate.ps1
+# Linux / macOS:
+source .venv/bin/activate
+
+# Install required dependencies
+pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### 2. Running the Reference Model
+### Step 2: Execute Automated Unit Tests
 
-To run the baseline software radar model:
+Run the complete 26-test suite verifying all 12 functional areas:
+
+```bash
+pytest tests/unit/ -v --tb=short
+```
+
+Expected output: `26 passed in ~0.6s`.
+
+### Step 3: Run the Frozen Radar Reference Model
+
+Execute a single CPI simulation run with default parameters ($N_R=512, N_D=32$):
+
 ```bash
 python src/radar_model.py
 ```
 
-### 3. Running Test Suites & Experiments
+### Step 4: Reproduce Baseline Objective I Experiments
 
 ```bash
-# Run slow-target validation (T06 & T07, 40 runs)
+# Reproduce Slow Targets T06 & T07 (40 runs):
 python tests/objective_1/slow_targets/run_slow_target_experiments.py
 
-# Run target range robustness sweeps (120 runs)
+# Reproduce Target Range Robustness across 6 bins (120 runs):
 python tests/objective_1/range_robustness/run_range_robustness.py
+
+# Run statistical audit of Step 7 (50 runs):
+python analysis/scripts/audit_step7.py
 ```
 
-### 4. Running Verification & Audits
+### Step 5: Reproduce Extended Validation Experiments
 
 ```bash
-# Run statistical audit of Step 7 (50 runs)
-python analysis/scripts/audit_step7.py
+# Reproduce Extended Experiment 2 (CFAR Calibration & ROC Analysis):
+python tests/extended_validation/cfar_calibration/run_cfar_calibration.py
 
-# Run clutter proximity failure investigation (210 runs)
-python analysis/scripts/analyze_clutter_proximity.py
+# Reproduce Extended Experiment 3 (Fixed-Gain ADC & Quantisation Robustness):
+python tests/extended_validation/adc_fixed_gain/run_adc_fixed_gain.py
 
-# Re-render all publication PDFs
-python docs/objective_1/render_pdfs.py
+# Run Extended Experiment 1 Pilot (Clutter-Proximity Sweep, 4 runs):
+python tests/extended_validation/clutter_proximity_sweep/run_clutter_proximity_sweep.py --pilot
 ```
 
 ---
 
-## Academic Documentation & Reports
+## 11. Configuration & Seed Management Policy
 
-All formal documentation, executive summaries, and audit reports are available under [`docs/`](docs/):
-- **Final Validation Report:** [`docs/objective_1/final_report.pdf`](docs/objective_1/final_report.pdf)
-- **One-Page Executive Summary:** [`docs/objective_1/one_page_summary.pdf`](docs/objective_1/one_page_summary.pdf)
-- **Comprehensive Audit Report:** [`docs/objective_1/final_audit.pdf`](docs/objective_1/final_audit.pdf)
-- **Objective II Limitations Handoff:** [`docs/objective_2/limitations_handoff.pdf`](docs/objective_2/limitations_handoff.pdf)
+To guarantee 100% scientific reproducibility and prevent stochastic drift, all experiments are governed by centralized JSON configuration files in [`configs/`](configs/) and strict random seed partitioning:
+
+- **Seed 42:** Reserved strictly for deterministic benchmark runs (T01–T05, C01–C02) to establish repeatable, noise-isolated ground truth.
+- **Seeds 1–10:** Assigned to Objective I multi-seed campaigns (Step 7 target-present, Step 7 noise-only, T06/T07 slow targets, range robustness, and Extended Experiment 1).
+- **Seeds 101–200:** Assigned exclusively to independent noise-only calibration frames in Extended Experiment 2 ($1.6 \times 10^6$ cells).
+- **Seeds 201–400:** Assigned exclusively to independent noise-only validation frames in Extended Experiment 2 ($3.2 \times 10^6$ cells).
+- **Seeds 501–520:** Assigned to the 20 Monte Carlo iterations of Extended Experiment 3 fixed-gain sweeps.
+
+All random number generators instantiate explicit local instances (`np.random.RandomState(seed)` or `np.random.default_rng(seed)`), preventing global RNG state contamination.
 
 ---
 
-## Transition to Objective II
+## 12. Primary Reports, Audit Certificates & Data Links
 
-Objective I is formally frozen. The verified simulation gaps carried into Objective II are:
-1. **Pre-CFAR Clutter Suppression:** Implement an MTI (Moving Target Indicator) filter or zero-Doppler notch filter to suppress clutter before Doppler FFT.
-2. **Outlier-Robust CFAR:** Implement Order-Statistic CFAR (OS-CFAR), Greatest-Of/Smallest-Of (GO/SO-CFAR), or 2D Doppler-excluding CFAR.
-3. **Fixed-Point RTL Architecture:** Design bit-accurate fixed-point FFT/CFAR datapaths for FPGA implementation.
-4. **Adaptive CFAR Tuning:** Mitigate Hann window correlation loss and straddle losses.
+All academic documentation, peer-review artifacts, and audit certificates are organized in [`docs/`](docs/):
+
+- **Objective I Final Academic Validation Report:**  
+  [`docs/objective_1/final_report.pdf`](docs/objective_1/final_report.pdf) — Comprehensive 18-section academic report detailing mathematical derivations, 217-run empirical analysis, and 9 high-resolution figures.
+- **One-Page Executive Summary:**  
+  [`docs/objective_1/one_page_summary.pdf`](docs/objective_1/one_page_summary.pdf) — High-level technical summary with consolidated metric tables for academic project review.
+- **Objective I Formal Audit Certificate:**  
+  [`docs/objective_1/final_audit.pdf`](docs/objective_1/final_audit.pdf) — Item-by-item verification certificate reconciling all 217 baseline runs, window gain derivations, and theoretical $P_{fa}$ models.
+- **Objective II Limitations & RTL Handoff Report:**  
+  [`docs/objective_2/limitations_handoff.pdf`](docs/objective_2/limitations_handoff.pdf) — Engineering specification defining the five simulation failure modes and detailing the RTL requirements for FPGA implementation.
+- **Extended Experiment 2: CFAR Calibration & ROC Report:**  
+  [`docs/objective_1/cfar_calibration_roc_report.md`](docs/objective_1/cfar_calibration_roc_report.md) — Complete calibration curves, ROC figures, and sensitivity trade-off analysis across 1,050 frames.
+- **Extended Experiment 3: Fixed-Gain ADC Robustness Report:**  
+  [`docs/objective_1/adc_fixed_gain_report.md`](docs/objective_1/adc_fixed_gain_report.md) — Comprehensive clipping, SQNR, and spectral splatter analysis under unscaled fixed-gain stages.
+- **Archive Manifest & Data Integrity:**  
+  [`docs/objective_1/archive_manifest.csv`](docs/objective_1/archive_manifest.csv) — Cryptographic SHA-256 verification manifest cataloging reproducible bulk raw I/Q archives.
